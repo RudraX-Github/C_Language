@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/* Reset default body margins for a true full-screen app */
+body {
+  margin: 0;
+  padding: 0;
+}

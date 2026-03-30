@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Array Arsenal: C Programming</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            scroll-behavior: smooth;
+        }
+        
+        .code-font { font-family: 'Fira Code', monospace; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        
+        /* Contiguous Memory Tape Styles */
+        .ram-tape {
+            display: flex;
+            align-items: flex-end;
+            padding: 2rem 1rem;
+            position: relative;
+        }
+
+        .ram-cell { 
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .ram-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 3.5rem;
+            height: 3.5rem;
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+            font-size: 1.25rem;
+            border: 2px solid #cbd5e1;
+            background-color: white;
+            color: #334155;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-right: -2px; /* Overlap borders for contiguous look */
+            z-index: 10;
+        }
+        
+        /* The last cell shouldn't have overlapped margin */
+        .ram-cell:last-child .ram-box { margin-right: 0; }
+
+        .ram-cell.active .ram-box {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            transform: scale(1.15);
+            box-shadow: 0 10px 25px -5px rgba(59,130,246,0.4);
+            z-index: 20;
+            border-radius: 6px;
+        }
+
+        .ram-addr {
+            font-size: 0.65rem;
+            color: #64748b;
+            font-family: 'Fira Code', monospace;
+            margin-top: 0.75rem;
+            transform: rotate(45deg);
+            transform-origin: left top;
+            transition: all 0.3s ease;
+        }
+        
+        .ram-cell.active .ram-addr { color: #3b82f6; font-weight: bold; transform: rotate(45deg) scale(1.1); }
+
+        .ram-idx {
+            position: absolute;
+            top: -1.75rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #94a3b8;
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* 2D Grid Cell */
+        .grid-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 3rem;
+            height: 3rem;
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .grid-box.active {
+            transform: scale(1.15);
+            box-shadow: 0 10px 20px -5px rgba(0,0,0,0.2);
+            z-index: 20;
+        }
+
+        /* Thematic Grid Background */
+        .bg-blueprint {
+            background-image: linear-gradient(rgba(203, 213, 225, 0.3) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(203, 213, 225, 0.3) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* Pointer Animation */
+        @keyframes bouncePtr {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .ptr-bounce { animation: bouncePtr 1.5s infinite ease-in-out; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px;}
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white p-4 shadow-lg sticky top-0 z-50 border-b-4 border-blue-500">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-500/20 p-2 rounded-lg border border-blue-500/30">
+                    <i data-lucide="layout-list" class="text-blue-400 w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">The Array Arsenal</h1>
+                    <p class="text-xs text-slate-400 font-medium">C Programming: 1D Arrays, 2D Matrices, and Memory</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex gap-6 text-sm font-semibold text-slate-300">
+                <a href="#section-1d" class="hover:text-white transition-colors">1. Linear (1D)</a>
+                <a href="#section-2d" class="hover:text-white transition-colors">2. Matrices (2D) & RAM</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-1 w-full max-w-6xl mx-auto p-6 md:p-10 space-y-24 pb-32">
+        
+        <!-- ==========================================
+             SECTION 1: 1D Arrays
+             ========================================== -->
+        <section id="section-1d" class="scroll-mt-24">
+            <div class="mb-8">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-bold text-sm mb-3 border border-blue-200 shadow-sm">
+                    <i data-lucide="align-horizontal-space-around" class="w-4 h-4"></i> Linear Data Collection
+                </div>
+                <h2 class="text-3xl font-bold mb-4 text-slate-800">1. One-Dimensional (1D) Arrays</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg leading-relaxed">
+                    <p>An array is a collection of elements of the <b>same data type</b> stored in <b>contiguous (side-by-side) memory locations</b>. In C, arrays are strictly <code class="bg-slate-200 px-1.5 py-0.5 rounded text-slate-800 font-mono text-sm">0-indexed</code>, meaning the first element lives at index 0.</p>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-12 gap-8 items-stretch">
+                <!-- C Code Editor -->
+                <div class="lg:col-span-5 bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-700 flex flex-col overflow-hidden">
+                    <div class="bg-[#1e293b] px-4 py-3 border-b border-slate-700 flex items-center gap-3">
+                        <div class="flex gap-1.5">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        </div>
+                        <span class="text-slate-300 text-xs font-mono font-bold flex items-center gap-2"><i data-lucide="terminal" class="w-3.5 h-3.5 text-blue-400"></i> array_1d.c</span>
+                    </div>
+                    
+                    <div class="p-6 code-font text-sm leading-[2.5rem] text-slate-300 flex-1">
+                        <div class="text-slate-500 italic -mb-2">// 1. Declaration & Initialization</div>
+                        <div class="flex flex-wrap items-center">
+                            <span class="text-blue-400 font-bold mr-2">int</span> 
+                            <span class="text-white">marks[<span class="text-orange-300">5</span>]</span> = { 
+                            <input type="text" id="arr1-vals" value="85, 92, 78, 90, 88" class="bg-slate-800 text-amber-300 border border-slate-600 rounded px-2 w-[180px] sm:w-[200px] outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 text-center shadow-inner transition-all mx-1" onchange="render1DArray()"> };
+                        </div>
+
+                        <div class="text-slate-500 italic mt-6 -mb-2">// 2. Array Size Details</div>
+                        <div><span class="text-blue-400 font-bold">int</span> sizeOfElement = <span class="text-purple-400 font-bold">sizeof</span>(<span class="text-blue-400 font-bold">int</span>); <span class="text-slate-500 italic">// 4 bytes</span></div>
+                        <div><span class="text-blue-400 font-bold">int</span> totalMemory = <span class="text-purple-400 font-bold">sizeof</span>(marks); <span class="text-slate-500 italic">// 20 bytes</span></div>
+                        
+                        <div class="text-slate-500 italic mt-6 -mb-2">// 3. Element Access (Read/Write)</div>
+                        <div class="flex flex-wrap items-center gap-2 bg-slate-800/60 p-3 rounded-lg border border-slate-700 mt-2 shadow-inner">
+                            <span class="text-emerald-400 font-bold">printf</span>(<span class="text-amber-300">"%d"</span>, marks[
+                            <input type="number" id="arr1-access-idx" value="2" min="0" max="4" class="bg-slate-700 text-white border border-slate-500 rounded px-1 w-12 outline-none focus:border-emerald-400 text-center shadow-inner">
+                            ]);
+                            <button onclick="access1DElement()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-md text-xs font-bold transition-all ml-auto shadow-md active:translate-y-px">Execute</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory Visualizer -->
+                <div class="lg:col-span-7 bg-white border border-slate-200 rounded-2xl shadow-xl flex flex-col relative overflow-hidden">
+                    <div class="bg-slate-50 border-b border-slate-200 px-5 py-3 flex justify-between items-center z-10">
+                        <div class="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><i data-lucide="cpu" class="w-4 h-4 text-blue-500"></i> RAM Tape Visualizer</div>
+                        <div class="text-xs font-mono font-bold bg-blue-100 text-blue-800 px-2 py-1 rounded border border-blue-200">Base = 0x1000</div>
+                    </div>
+                    
+                    <div class="flex-1 flex flex-col items-center w-full relative bg-blueprint p-6">
+                        
+                        <!-- 1D Array Container (The Tape) -->
+                        <div class="w-full overflow-x-auto pb-12 pt-8 flex justify-center">
+                            <div id="array-1d-container" class="ram-tape min-w-max">
+                                <!-- Cells injected via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Computed Info Dashboard -->
+                        <div id="arr1-info-box" class="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-white border border-slate-200 p-4 rounded-xl shadow-2xl w-[90%] max-w-sm opacity-0 transition-all duration-300 translate-y-4 z-20">
+                            <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
+                                <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                    <i data-lucide="calculator" class="w-4 h-4 text-emerald-500"></i> Address Computed
+                                </h4>
+                                <code class="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded text-sm border border-emerald-100" id="info1-stmt">marks[2]</code>
+                            </div>
+                            
+                            <div class="text-xs font-mono text-slate-600 space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400">Formula:</span> 
+                                    <span>Base + (Index * Size)</span>
+                                </div>
+                                <div class="bg-slate-50 p-2 rounded border border-slate-200 flex justify-between items-center">
+                                    <span class="text-slate-500">Math:</span>
+                                    <code class="text-blue-700">0x1000 + (<span id="info1-idx" class="font-bold text-rose-500">2</span> * 4)</code>
+                                </div>
+                                <div class="flex justify-between items-center pt-1">
+                                    <span class="text-slate-400">Physical Address:</span> 
+                                    <span id="info1-addr" class="font-bold text-sm text-slate-800 bg-slate-200 px-2 py-0.5 rounded">0x1008</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <div class="flex items-center justify-center py-4">
+            <div class="w-full h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+        </div>
+
+        <!-- ==========================================
+             SECTION 2: 2D Arrays & Row-Major Flattening
+             ========================================== -->
+        <section id="section-2d" class="scroll-mt-24">
+            <div class="mb-8">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-sm mb-3 border border-emerald-200 shadow-sm">
+                    <i data-lucide="grid" class="w-4 h-4"></i> The "Matrix" Illusion
+                </div>
+                <h2 class="text-3xl font-bold mb-4 text-slate-800">2. Matrices & Row-Major Flattening</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg leading-relaxed">
+                    <p>We logically visualize a 2D array as a table with <b>Rows</b> and <b>Columns</b>. But here is the hard truth: <b class="text-rose-600">Your computer's RAM is NOT a grid. RAM is a flat, 1D line.</b></p>
+                    <p>C stores 2D matrices sequentially by placing one row immediately after the other. This is called <b>Row-Major Order</b>. The compiler uses a math formula to instantly convert your 2D <code class="bg-slate-200 px-1 rounded text-slate-800 font-mono text-sm">grid[row][col]</code> coordinate into a 1D flat memory address.</p>
+                </div>
+            </div>
+
+            <!-- Master Grid Layout -->
+            <div class="grid lg:grid-cols-12 gap-8 items-start">
+                
+                <!-- Left Column: C Code -->
+                <div class="lg:col-span-4 bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-700 flex flex-col overflow-hidden sticky top-24">
+                    <div class="bg-[#1e293b] px-4 py-3 border-b border-slate-700 flex items-center gap-3">
+                        <div class="flex gap-1.5">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        </div>
+                        <span class="text-slate-300 text-xs font-mono font-bold flex items-center gap-2"><i data-lucide="terminal" class="w-3.5 h-3.5 text-emerald-400"></i> matrix_2d.c</span>
+                    </div>
+                    
+                    <div class="p-5 code-font text-sm leading-[2.2rem] text-slate-300">
+                        <div class="text-slate-500 italic -mb-1">// 1. Declare 3x4 Matrix</div>
+                        <div>
+                            <span class="text-blue-400 font-bold">int</span> grid[<span class="text-orange-300">3</span>][<span class="text-orange-300">4</span>] = {<br>
+                            &nbsp;&nbsp;{<input type="text" id="r0" value="1, 2, 3, 4" class="bg-slate-800 text-amber-300 border border-slate-600 rounded px-1.5 w-[100px] outline-none focus:border-emerald-400 text-center shadow-inner" onchange="render2DMapper()">}, <span class="text-slate-500 italic">// R0</span><br>
+                            &nbsp;&nbsp;{<input type="text" id="r1" value="5, 6, 7, 8" class="bg-slate-800 text-amber-300 border border-slate-600 rounded px-1.5 w-[100px] outline-none focus:border-emerald-400 text-center shadow-inner" onchange="render2DMapper()">}, <span class="text-slate-500 italic">// R1</span><br>
+                            &nbsp;&nbsp;{<input type="text" id="r2" value="9, 0, 1, 2" class="bg-slate-800 text-amber-300 border border-slate-600 rounded px-1.5 w-[100px] outline-none focus:border-emerald-400 text-center shadow-inner" onchange="render2DMapper()">}  <span class="text-slate-500 italic">// R2</span><br>
+                            };
+                        </div>
+
+                        <div class="text-slate-500 italic mt-6 -mb-1">// 2. Total Memory Space</div>
+                        <div>Rows * Cols = 12 elements</div>
+                        <div>Total = 12 * 4 bytes = <span class="text-emerald-400 font-bold">48 bytes</span></div>
+                        
+                        <div class="text-slate-500 italic mt-6 -mb-1">// 3. Access Coordinate</div>
+                        <div class="bg-slate-800/60 p-4 rounded-lg border border-slate-700 mt-2 shadow-inner flex flex-col gap-3">
+                            <div class="flex items-center gap-1.5 text-base">
+                                <span class="text-emerald-400 font-bold">grid</span>[<input type="number" id="arr2-r" value="1" min="0" max="2" class="bg-slate-700 text-white border border-slate-500 rounded px-1 w-12 outline-none focus:border-emerald-400 text-center shadow-inner">][<input type="number" id="arr2-c" value="2" min="0" max="3" class="bg-slate-700 text-white border border-slate-500 rounded px-1 w-12 outline-none focus:border-emerald-400 text-center shadow-inner">]
+                            </div>
+                            <button onclick="access2DElement()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-md text-sm font-bold transition-all shadow-md active:translate-y-px flex justify-center items-center gap-2">
+                                <i data-lucide="crosshair" class="w-4 h-4"></i> Map to RAM
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Interactive RAM Dashboard -->
+                <div class="lg:col-span-8 flex flex-col gap-6">
+                    
+                    <!-- Top: Logical 2D Grid -->
+                    <div class="bg-white border border-slate-200 rounded-2xl shadow-xl flex flex-col relative overflow-hidden">
+                        <div class="bg-slate-50 border-b border-slate-200 px-5 py-3 flex justify-between items-center z-10">
+                            <div class="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><i data-lucide="grid-3x3" class="w-4 h-4 text-emerald-500"></i> Logical "Human" View</div>
+                        </div>
+                        
+                        <div class="p-8 flex justify-center bg-blueprint">
+                            <div class="flex gap-4 items-start">
+                                <!-- Y Axis -->
+                                <div class="flex flex-col justify-center items-center pr-3 border-r-2 border-slate-200 mt-6">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Rows (i)</span>
+                                    <div class="flex flex-col justify-around h-full gap-2 text-sm font-mono font-bold text-slate-400">
+                                        <span class="flex items-center h-12 text-amber-600">R0</span>
+                                        <span class="flex items-center h-12 text-purple-600">R1</span>
+                                        <span class="flex items-center h-12 text-sky-600">R2</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Grid -->
+                                <div>
+                                    <div class="flex justify-around text-sm font-mono font-bold text-slate-400 mb-2 pl-1 pr-1">
+                                        <span class="w-12 text-center">C0</span>
+                                        <span class="w-12 text-center">C1</span>
+                                        <span class="w-12 text-center">C2</span>
+                                        <span class="w-12 text-center">C3</span>
+                                    </div>
+                                    <div id="logical-grid" class="flex flex-col gap-2 p-3 bg-white border border-slate-200 rounded-xl shadow-md">
+                                        <!-- Injected via JS -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom: Physical RAM & Math -->
+                    <div class="bg-white border border-slate-200 rounded-2xl shadow-xl flex flex-col relative overflow-hidden">
+                        <div class="bg-slate-900 border-b border-slate-800 px-5 py-3 flex justify-between items-center z-10">
+                            <div class="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2"><i data-lucide="hard-drive" class="w-4 h-4 text-rose-400"></i> Physical "RAM" View</div>
+                            <div class="text-xs font-mono font-bold bg-rose-500/20 text-rose-300 px-2 py-1 rounded border border-rose-500/30">Base = 0x2000</div>
+                        </div>
+
+                        <!-- Mathematical Bridge (Hidden initially) -->
+                        <div id="bridge-math" class="bg-slate-800 text-slate-300 border-b border-slate-700 p-5 flex flex-col md:flex-row items-center justify-around gap-4 h-0 opacity-0 overflow-hidden transition-all duration-500">
+                            
+                            <div class="flex flex-col items-center">
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Step 1: Flatten (Row-Major)</span>
+                                <div class="bg-black/50 border border-slate-700 px-4 py-2 rounded-lg font-mono text-sm flex items-center gap-2 shadow-inner">
+                                    <span class="text-slate-400">(</span><span id="math-r" class="text-emerald-400 font-bold">R</span> <span class="text-slate-500">*</span> <span class="text-amber-200">Cols</span><span class="text-slate-400">)</span> <span class="text-slate-500">+</span> <span id="math-c" class="text-emerald-400 font-bold">C</span>
+                                    <i data-lucide="arrow-right" class="w-4 h-4 text-slate-500 mx-1"></i>
+                                    <span id="math-lin" class="text-rose-400 font-bold bg-rose-500/20 px-2 rounded">Idx</span>
+                                </div>
+                            </div>
+
+                            <div class="hidden md:block w-px h-10 bg-slate-600"></div>
+
+                            <div class="flex flex-col items-center">
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Step 2: Memory Address</span>
+                                <div class="bg-black/50 border border-slate-700 px-4 py-2 rounded-lg font-mono text-sm flex items-center gap-2 shadow-inner">
+                                    <span class="text-blue-300">Base</span> <span class="text-slate-500">+</span> <span class="text-slate-400">(</span><span id="math-lin2" class="text-rose-400 font-bold">Idx</span> <span class="text-slate-500">*</span> <span class="text-amber-200">4b</span><span class="text-slate-400">)</span>
+                                    <i data-lucide="arrow-right" class="w-4 h-4 text-slate-500 mx-1"></i>
+                                    <span id="math-addr" class="text-white font-bold bg-blue-500/30 px-2 rounded border border-blue-500/50">Addr</span>
+                                </div>
+                            </div>
+
+                        </div>
+                        
+                        <!-- Physical Tape Container -->
+                        <div class="flex-1 flex flex-col w-full relative bg-slate-50">
+                            <div class="w-full overflow-x-auto pb-14 pt-12 flex items-start px-6" id="tape-scroll-wrapper">
+                                <div id="physical-tape" class="ram-tape min-w-max border-b-4 border-slate-300 pb-2">
+                                    <!-- Cells injected via JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        /* =========================================
+           SECTION 1: 1D ARRAY LOGIC
+           ========================================= */
+        const arr1BaseAddr = 0x1000;
+        let arr1Data = [];
+
+        function render1DArray() {
+            const valStr = document.getElementById('arr1-vals').value;
+            arr1Data = valStr.split(',').map(v => parseInt(v.trim())).filter(v => !isNaN(v));
+            
+            arr1Data = arr1Data.slice(0, 5);
+            while(arr1Data.length < 5) arr1Data.push(0);
+
+            const container = document.getElementById('array-1d-container');
+            container.innerHTML = '';
+
+            arr1Data.forEach((val, idx) => {
+                const addr = (arr1BaseAddr + (idx * 4)).toString(16).toUpperCase();
+                
+                const cell = document.createElement('div');
+                cell.className = 'ram-cell';
+                cell.id = `cell-1d-${idx}`;
+                
+                cell.innerHTML = `
+                    <div class="ram-idx">${idx}</div>
+                    <div class="ram-box">${val}</div>
+                    <div class="ram-addr">0x${addr}</div>
+                    <div class="absolute top-[-35px] ptr-bounce hidden z-30" id="ptr-1d-${idx}">
+                        <div class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-lg">PTR</div>
+                        <div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-blue-600 mx-auto -mt-px"></div>
+                    </div>
+                `;
+                container.appendChild(cell);
+            });
+            
+            const infoBox = document.getElementById('arr1-info-box');
+            infoBox.style.opacity = '0';
+            infoBox.style.transform = 'translate(-50%, 1rem)';
+        }
+
+        function access1DElement() {
+            const idx = parseInt(document.getElementById('arr1-access-idx').value);
+            
+            document.querySelectorAll('#array-1d-container .ram-cell').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('[id^="ptr-1d-"]').forEach(p => p.classList.add('hidden'));
+
+            const infoBox = document.getElementById('arr1-info-box');
+
+            if (idx >= 0 && idx < arr1Data.length) {
+                const targetCell = document.getElementById(`cell-1d-${idx}`);
+                const ptr = document.getElementById(`ptr-1d-${idx}`);
+                
+                targetCell.classList.add('active');
+                ptr.classList.remove('hidden');
+                
+                const addr = (arr1BaseAddr + (idx * 4)).toString(16).toUpperCase();
+                document.getElementById('info1-stmt').innerText = `marks[${idx}]`;
+                document.getElementById('info1-idx').innerText = idx;
+                document.getElementById('info1-addr').innerText = `0x${addr}`;
+                
+                infoBox.style.opacity = '1';
+                infoBox.style.transform = 'translate(-50%, 0)';
+            } else {
+                alert("Index out of bounds! In real C, this causes Undefined Behavior (Segmentation Fault).");
+                infoBox.style.opacity = '0';
+                infoBox.style.transform = 'translate(-50%, 1rem)';
+            }
+        }
+
+        // Init 1D Array
+        render1DArray();
+
+        /* =========================================
+           SECTION 2: 2D ARRAY (LOGICAL & PHYSICAL)
+           ========================================= */
+        const arr2BaseAddr = 0x2000;
+        let arr2Data = []; 
+        const rows = 3;
+        const cols = 4;
+
+        // Theme colors for rows to map visually
+        const rowThemes = [
+            { bg: 'bg-amber-100', border: 'border-amber-400', text: 'text-amber-800', light: 'bg-amber-50', ptr: 'bg-amber-600', bdr: 'border-t-amber-600' }, // R0
+            { bg: 'bg-purple-100', border: 'border-purple-400', text: 'text-purple-800', light: 'bg-purple-50', ptr: 'bg-purple-600', bdr: 'border-t-purple-600' }, // R1
+            { bg: 'bg-sky-100', border: 'border-sky-400', text: 'text-sky-800', light: 'bg-sky-50', ptr: 'bg-sky-600', bdr: 'border-t-sky-600' }  // R2
+        ];
+
+        function render2DMapper() {
+            arr2Data = [];
+            const flatData = [];
+            
+            for(let i=0; i<rows; i++) {
+                const rowStr = document.getElementById(`r${i}`).value;
+                let rowVals = rowStr.split(',').map(v => parseInt(v.trim())).filter(v => !isNaN(v));
+                rowVals = rowVals.slice(0, cols);
+                while(rowVals.length < cols) rowVals.push(0);
+                
+                arr2Data.push(rowVals);
+                flatData.push(...rowVals);
+            }
+
+            // 1. Render Logical 2D Grid
+            const gridContainer = document.getElementById('logical-grid');
+            gridContainer.innerHTML = '';
+            
+            arr2Data.forEach((rowVals, r) => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'flex gap-2';
+                const theme = rowThemes[r];
+                
+                rowVals.forEach((val, c) => {
+                    const cell = document.createElement('div');
+                    cell.className = `grid-box ${theme.light} ${theme.border} ${theme.text}`;
+                    cell.id = `log-cell-${r}-${c}`;
+                    cell.innerText = val;
+                    rowDiv.appendChild(cell);
+                });
+                gridContainer.appendChild(rowDiv);
+            });
+
+            // 2. Render Physical 1D Tape
+            const flatContainer = document.getElementById('physical-tape');
+            flatContainer.innerHTML = '';
+
+            flatData.forEach((val, li) => {
+                const r = Math.floor(li / cols);
+                const theme = rowThemes[r];
+                const addr = (arr2BaseAddr + (li * 4)).toString(16).toUpperCase();
+                
+                const cell = document.createElement('div');
+                cell.className = 'ram-cell';
+                cell.id = `phy-cell-${li}`;
+                
+                cell.innerHTML = `
+                    <div class="ram-idx text-[10px] mb-1 opacity-70">idx ${li}</div>
+                    <div class="ram-box ${theme.light} !border-[2px] !border-slate-300" id="phy-box-${li}">${val}</div>
+                    <div class="ram-addr mt-3 ml-2 text-[10px]">0x${addr}</div>
+                    <div class="absolute top-[-38px] ptr-bounce hidden z-30" id="ptr-flat-${li}">
+                        <div class="${theme.ptr} text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-lg whitespace-nowrap">RAM PTR</div>
+                        <div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] ${theme.bdr} mx-auto -mt-px"></div>
+                    </div>
+                `;
+                flatContainer.appendChild(cell);
+            });
+            
+            // Hide math bridge on re-render
+            const bridge = document.getElementById('bridge-math');
+            bridge.style.height = '0';
+            bridge.style.opacity = '0';
+            bridge.style.padding = '0';
+        }
+
+        function access2DElement() {
+            const r = parseInt(document.getElementById('arr2-r').value);
+            const c = parseInt(document.getElementById('arr2-c').value);
+
+            // Reset previously active logical cells
+            document.querySelectorAll('.grid-box').forEach(el => {
+                el.classList.remove('active', 'ring-4', 'ring-emerald-400');
+                el.style.backgroundColor = ''; // clear inline bg override
+            });
+            
+            // Reset physical cells & pointers
+            for(let i=0; i<(rows*cols); i++) {
+                const box = document.getElementById(`phy-box-${i}`);
+                if(box) box.classList.remove('!border-emerald-500', 'ring-4', 'ring-emerald-200', 'z-20', 'scale-110');
+                const ptr = document.getElementById(`ptr-flat-${i}`);
+                if(ptr) ptr.classList.add('hidden');
+            }
+
+            if (r >= 0 && r < rows && c >= 0 && c < cols) {
+                // 1. Highlight Logical Matrix
+                const logicalCell = document.getElementById(`log-cell-${r}-${c}`);
+                logicalCell.classList.add('active', 'ring-4', 'ring-emerald-400');
+                logicalCell.style.backgroundColor = '#d1fae5'; // Emerald 100 override
+
+                // 2. Calculate Math
+                const linearIndex = (r * cols) + c;
+                const addrHex = (arr2BaseAddr + (linearIndex * 4)).toString(16).toUpperCase();
+
+                // 3. Highlight Physical Tape
+                const phyBox = document.getElementById(`phy-box-${linearIndex}`);
+                const phyPtr = document.getElementById(`ptr-flat-${linearIndex}`);
+                
+                phyBox.classList.add('!border-emerald-500', 'ring-4', 'ring-emerald-200', 'z-20', 'scale-110');
+                phyBox.style.backgroundColor = '#d1fae5'; // Match logical
+                phyPtr.classList.remove('hidden');
+
+                // 4. Update and Show Math Bridge Dashboard
+                document.getElementById('math-r').innerText = r;
+                document.getElementById('math-c').innerText = c;
+                document.getElementById('math-lin').innerText = linearIndex;
+                document.getElementById('math-lin2').innerText = linearIndex;
+                document.getElementById('math-addr').innerText = `0x${addrHex}`;
+
+                const bridge = document.getElementById('bridge-math');
+                bridge.style.height = 'auto';
+                bridge.style.padding = '1.25rem';
+                bridge.style.opacity = '1';
+
+                // 5. Scroll tape smoothly
+                const wrapper = document.getElementById('tape-scroll-wrapper');
+                const cellOffset = document.getElementById(`phy-cell-${linearIndex}`).offsetLeft;
+                wrapper.scrollTo({ left: cellOffset - (wrapper.clientWidth / 2) + 40, behavior: 'smooth' });
+
+            } else {
+                alert(`Index out of bounds! Valid ranges: Row [0-${rows-1}], Col [0-${cols-1}]`);
+                const bridge = document.getElementById('bridge-math');
+                bridge.style.height = '0';
+                bridge.style.opacity = '0';
+                bridge.style.padding = '0';
+            }
+        }
+
+        // Initialize 2D
+        render2DMapper();
+
+    </script>
+</body>
+</html>

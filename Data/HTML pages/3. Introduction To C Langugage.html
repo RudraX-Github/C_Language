@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C Programming Core Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            scroll-behavior: smooth;
+        }
+        
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        /* Turbo C++ specific styles */
+        .turbo-c-theme {
+            background-color: #0000a8; /* Classic DOS Blue */
+            color: #ffff54; /* Classic DOS Yellow */
+            font-family: 'Fira Code', monospace;
+        }
+        .turbo-c-menu {
+            background-color: #a8a8a8;
+            color: black;
+        }
+        .turbo-c-border {
+            border: 4px double #54fcfc;
+        }
+
+        /* Execution Animation Classes */
+        .exec-line { transition: all 0.2s ease; }
+        .exec-active { background-color: #fef08a; color: #854d0e; font-weight: bold; border-left: 4px solid #eab308; }
+        .exec-done { background-color: #dcfce7; color: #166534; border-left: 4px solid #22c55e; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white p-4 shadow-md sticky top-0 z-50 border-b-4 border-blue-600">
+        <div class="max-w-5xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i data-lucide="cpu" class="text-blue-400 w-8 h-8"></i>
+                <div>
+                    <h1 class="text-xl font-bold">C Foundation Visualizer</h1>
+                    <p class="text-xs text-slate-400">Interactive learning for C History, Compilers, and Basic Syntax</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex gap-4 text-sm font-medium text-slate-300">
+                <a href="#section-intro" class="hover:text-white transition-colors">Introduction</a>
+                <a href="#section-translators" class="hover:text-white transition-colors">Compilers & Turbo C++</a>
+                <a href="#section-printf" class="hover:text-white transition-colors">Basic Program & Printf</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 w-full max-w-5xl mx-auto p-6 md:p-10 space-y-24 pb-32">
+        
+        <!-- ==========================================
+             SECTION 1: Intro, History, Importance 
+             ========================================== -->
+        <section id="section-intro" class="scroll-mt-24">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-4 flex items-center gap-3"><i data-lucide="book-open" class="text-blue-600 w-8 h-8"></i> 1. The Genesis of C</h2>
+                <p class="text-lg text-slate-600 mb-6">Before writing code, it's essential to understand what programming is and why the C language holds a legendary status in computer science.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- What is Programming -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:-translate-y-1 transition-transform duration-300">
+                    <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center mb-4">
+                        <i data-lucide="terminal" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">What is Programming?</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed">
+                        Computers are incredibly fast but completely dumb. <b>Programming</b> is the act of writing a set of specific instructions (an algorithm) in a language the computer can eventually understand to perform a specific task.
+                    </p>
+                </div>
+
+                <!-- History of C -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:-translate-y-1 transition-transform duration-300">
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-4">
+                        <i data-lucide="history" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">History of C</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed">
+                        Created in <b>1972</b> by <b>Dennis Ritchie</b> at Bell Labs. It was developed alongside the UNIX operating system. It evolved from an older language called 'B', hence the name 'C'.
+                    </p>
+                </div>
+
+                <!-- Importance of C -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:-translate-y-1 transition-transform duration-300">
+                    <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center mb-4">
+                        <i data-lucide="award" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Why is C Important?</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed">
+                        Known as the <b>"Mother of all languages."</b> Languages like C++, Java, and Python are heavily influenced by C. It's extremely fast, allowing direct memory manipulation, making it standard for OS kernels and embedded systems.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <hr class="border-slate-200">
+
+        <!-- ==========================================
+             SECTION 2: Translators & Turbo C++ 
+             ========================================== -->
+        <section id="section-translators" class="scroll-mt-24">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-4 flex items-center gap-3"><i data-lucide="arrow-right-left" class="text-purple-600 w-8 h-8"></i> 2. Translators & Turbo C++</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg space-y-4">
+                    <p>Computers only understand <b>Machine Code</b> (0s and 1s). Translators convert our human-readable C code (Source Code) into machine code. There are two main approaches: <b>Compilers</b> and <b>Interpreters</b>.</p>
+                    <ul class="list-disc pl-6 space-y-2">
+                        <li><b>Compiler (Used by C):</b> Translates the <i>entire</i> program at once. It generates a standalone executable file (like a .exe). It's faster to run, but you must recompile if you change the code.</li>
+                        <li><b>Interpreter (Used by Python):</b> Translates and executes the code <i>line by line</i>. Good for debugging, but generally runs slower.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Interactive Compiler/Interpreter Visualizer -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-10 shadow-inner">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="play-circle" class="w-5 h-5"></i> Execution Visualizer</h3>
+                    <div class="flex gap-2">
+                        <button onclick="simulateExecution('compiler')" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded shadow text-sm font-medium transition-colors">Run as Compiler</button>
+                        <button onclick="simulateExecution('interpreter')" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded shadow text-sm font-medium transition-colors">Run as Interpreter</button>
+                        <button onclick="resetExecution()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded shadow text-sm font-medium transition-colors"><i data-lucide="rotate-ccw" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm code-font">
+                    <!-- Source Code -->
+                    <div class="bg-white border border-slate-300 rounded overflow-hidden shadow-sm">
+                        <div class="bg-slate-200 px-3 py-1 font-bold text-slate-600 border-b border-slate-300">Source Code (C)</div>
+                        <div id="sim-code" class="p-3 space-y-1 text-slate-800">
+                            <div class="exec-line px-2 py-0.5 rounded" id="line-1">int x = 10;</div>
+                            <div class="exec-line px-2 py-0.5 rounded" id="line-2">int y = 5;</div>
+                            <div class="exec-line px-2 py-0.5 rounded" id="line-3">int sum = x + y;</div>
+                            <div class="exec-line px-2 py-0.5 rounded" id="line-4">printf(sum);</div>
+                        </div>
+                    </div>
+
+                    <!-- Translator Status -->
+                    <div class="bg-white border border-slate-300 rounded overflow-hidden shadow-sm flex flex-col items-center justify-center p-4 relative">
+                        <div class="absolute top-0 left-0 w-full bg-slate-200 px-3 py-1 font-bold text-slate-600 border-b border-slate-300 text-left">Translator</div>
+                        <i id="translator-icon" data-lucide="cog" class="w-12 h-12 text-slate-300 mt-6 mb-2"></i>
+                        <div id="translator-status" class="text-center font-bold text-slate-500">Waiting...</div>
+                        <div id="translator-desc" class="text-xs text-center text-slate-400 mt-2 font-sans"></div>
+                    </div>
+
+                    <!-- Output -->
+                    <div class="bg-slate-900 border border-slate-700 rounded overflow-hidden shadow-sm text-green-400">
+                        <div class="bg-slate-800 px-3 py-1 font-bold text-slate-300 border-b border-slate-700 flex justify-between">
+                            <span>Console Output</span>
+                            <span id="output-exe" class="hidden text-xs bg-slate-700 px-1 rounded text-white">program.exe generated</span>
+                        </div>
+                        <div id="sim-output" class="p-3 space-y-1">
+                            <!-- Output will appear here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Intro to Turbo C++ -->
+            <div class="grid md:grid-cols-2 gap-8 items-center">
+                <div>
+                    <h3 class="text-2xl font-bold mb-3 flex items-center gap-2 text-blue-700">
+                        <i data-lucide="monitor" class="w-6 h-6"></i> Enter Turbo C++
+                    </h3>
+                    <p class="text-slate-600 leading-relaxed mb-4">
+                        <b>Turbo C++</b> was a famous Integrated Development Environment (IDE) and compiler developed by Borland in the late 1980s. 
+                        It combined a text editor, a compiler, and a debugger into a single program.
+                    </p>
+                    <p class="text-slate-600 leading-relaxed">
+                        While vastly outdated today (it's a 16-bit compiler running in DOS), it remains a nostalgic learning tool in many institutions worldwide because it visually unifies the coding and compiling process in its iconic blue screen.
+                    </p>
+                </div>
+                
+                <!-- Turbo C++ Mockup -->
+                <div class="turbo-c-theme p-1 rounded-lg shadow-2xl transform rotate-1 hover:rotate-0 transition-transform duration-300">
+                    <div class="turbo-c-menu text-sm px-4 py-1 flex gap-4 font-bold border-b-2 border-white">
+                        <span><span class="text-red-600">F</span>ile</span>
+                        <span><span class="text-red-600">E</span>dit</span>
+                        <span><span class="text-red-600">R</span>un</span>
+                        <span><span class="text-red-600">C</span>ompile</span>
+                    </div>
+                    <div class="turbo-c-border m-1 p-4 min-h-[200px] relative">
+                        <div class="absolute -top-3 left-4 bg-[#0000a8] px-2 text-[#54fcfc] font-bold">NONAME00.CPP</div>
+                        <div class="text-[#ffff54]">
+                            <span class="text-white">#include</span> &lt;stdio.h&gt;<br>
+                            <span class="text-white">#include</span> &lt;conio.h&gt;<br><br>
+                            <span class="text-white">void</span> main() {<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;clrscr(); <span class="text-[#a8a8a8]">/* Clear screen */</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;printf(<span class="text-[#54fcfc]">"Hello Turbo C++!"</span>);<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;getch(); <span class="text-[#a8a8a8]">/* Wait for key */</span><br>
+                            }
+                        </div>
+                        <div class="mt-4 flex items-center animate-pulse">
+                            <div class="w-2 h-4 bg-[#ffff54]"></div>
+                        </div>
+                        
+                        <!-- Scrollbars mockup -->
+                        <div class="absolute bottom-0 left-0 w-full h-4 bg-[#a8a8a8] flex justify-between items-center px-1">
+                            <div class="w-4 h-3 bg-black text-[#a8a8a8] flex items-center justify-center text-[8px]">◄</div>
+                            <div class="h-2 w-16 bg-[#54fcfc] rounded-full opacity-50"></div>
+                            <div class="w-4 h-3 bg-black text-[#a8a8a8] flex items-center justify-center text-[8px]">►</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <hr class="border-slate-200">
+
+        <!-- ==========================================
+             SECTION 3: Basic Program & Printf 
+             ========================================== -->
+        <section id="section-printf" class="scroll-mt-24">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-4 flex items-center gap-3"><i data-lucide="code" class="text-emerald-500 w-8 h-8"></i> 3. Basic Program & The printf() Function</h2>
+                <p class="text-lg text-slate-600">Let's write your first C program. The structure requires a library inclusion, a main function, and the standard output function <code class="bg-slate-200 px-1 rounded code-font text-sm">printf()</code>.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Code Editor Interactive -->
+                <div class="lg:col-span-7 bg-[#1e1e1e] rounded-xl overflow-hidden shadow-xl flex flex-col border border-slate-700">
+                    <div class="bg-[#2d2d2d] px-4 py-2 flex items-center gap-2 border-b border-black">
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span class="text-slate-400 text-xs ml-2 font-mono">main.c</span>
+                    </div>
+                    <div class="p-5 text-sm code-font text-[#d4d4d4] flex-1 leading-loose">
+                        <div class="mb-2"><span class="text-[#c586c0]">#include</span> <span class="text-[#ce9178]">&lt;stdio.h&gt;</span> <span class="text-[#6a9955] ml-2">// Standard Input Output Library</span></div>
+                        <br>
+                        <div><span class="text-[#569cd6]">int</span> <span class="text-[#dcdcaa]">main</span>() { <span class="text-[#6a9955] ml-2">// The execution entry point</span></div>
+                        
+                        <div class="pl-8 relative mt-2 group">
+                            <span class="text-[#dcdcaa]">printf</span>(<span class="text-[#ce9178]">"</span>
+                            <!-- INTERACTIVE INPUT -->
+                            <input type="text" id="printf-input" value="Hello World!\nWelcome to C\tProgramming." 
+                                   class="bg-[#1e1e1e] text-[#ce9178] border-b border-dashed border-[#ce9178]/50 outline-none w-[260px] md:w-[350px] font-mono p-0 focus:border-solid focus:border-[#ce9178] focus:bg-[#2a2a2a] transition-colors"
+                                   oninput="updateConsole()" autocomplete="off" spellcheck="false">
+                            <span class="text-[#ce9178]">"</span>);
+                            
+                            <!-- Tooltip hint -->
+                            <div class="absolute -top-10 left-10 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded shadow opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                                Edit this text! Try \n and \t
+                            </div>
+                        </div>
+
+                        <div class="pl-8 mt-2"><span class="text-[#c586c0]">return</span> <span class="text-[#b5cea8]">0</span>; <span class="text-[#6a9955] ml-2">// Return success status to OS</span></div>
+                        <div>}</div>
+                    </div>
+                </div>
+
+                <!-- Explanation & Live Output -->
+                <div class="lg:col-span-5 flex flex-col gap-6">
+                    
+                    <!-- Live Console -->
+                    <div class="bg-black rounded-xl overflow-hidden shadow-lg border border-slate-700 flex-1 flex flex-col">
+                        <div class="bg-slate-800 text-slate-300 text-xs px-4 py-2 font-mono font-bold flex justify-between items-center border-b border-slate-700">
+                            <span>TERMINAL</span>
+                            <i data-lucide="terminal" class="w-4 h-4"></i>
+                        </div>
+                        <div class="p-5 code-font text-green-400 text-sm flex-1 leading-relaxed whitespace-pre-wrap relative" id="live-console">
+                            <!-- Output gets injected here -->
+                        </div>
+                    </div>
+
+                    <!-- Escape Sequences Guide -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 shadow-sm">
+                        <h4 class="font-bold text-blue-900 mb-3 flex items-center gap-2">
+                            <i data-lucide="info" class="w-5 h-5 text-blue-600"></i> Escape Sequences
+                        </h4>
+                        <p class="text-sm text-blue-800 mb-3">Because you can't hit the "Enter" key or "Tab" key inside a string literal, C uses special character combinations starting with a backslash (<code class="bg-blue-200 px-1 rounded">\</code>).</p>
+                        
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div class="bg-white px-3 py-2 border border-blue-100 rounded flex items-center justify-between">
+                                <code class="font-bold text-slate-700 code-font">\n</code>
+                                <span class="text-slate-500">New Line</span>
+                            </div>
+                            <div class="bg-white px-3 py-2 border border-blue-100 rounded flex items-center justify-between">
+                                <code class="font-bold text-slate-700 code-font">\t</code>
+                                <span class="text-slate-500">Horizontal Tab</span>
+                            </div>
+                            <div class="bg-white px-3 py-2 border border-blue-100 rounded flex items-center justify-between">
+                                <code class="font-bold text-slate-700 code-font">\\</code>
+                                <span class="text-slate-500">Backslash</span>
+                            </div>
+                            <div class="bg-white px-3 py-2 border border-blue-100 rounded flex items-center justify-between">
+                                <code class="font-bold text-slate-700 code-font">\"</code>
+                                <span class="text-slate-500">Double Quote</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        /* =========================================
+           COMPILER VS INTERPRETER SIMULATION LOGIC
+           ========================================= */
+        let simTimeoutIds = [];
+        const simLines = [
+            document.getElementById('line-1'),
+            document.getElementById('line-2'),
+            document.getElementById('line-3'),
+            document.getElementById('line-4')
+        ];
+        const simOutput = document.getElementById('sim-output');
+        const simIcon = document.getElementById('translator-icon');
+        const simStatus = document.getElementById('translator-status');
+        const simDesc = document.getElementById('translator-desc');
+        const outExe = document.getElementById('output-exe');
+
+        function clearSim() {
+            simTimeoutIds.forEach(id => clearTimeout(id));
+            simTimeoutIds = [];
+            simLines.forEach(line => {
+                line.classList.remove('exec-active', 'exec-done');
+            });
+            simOutput.innerHTML = '';
+            simIcon.classList.remove('animate-spin', 'text-purple-500', 'text-teal-500');
+            simIcon.classList.add('text-slate-300');
+            simStatus.innerText = 'Waiting...';
+            simStatus.className = 'text-center font-bold text-slate-500';
+            simDesc.innerText = '';
+            outExe.classList.add('hidden');
+        }
+
+        function resetExecution() {
+            clearSim();
+        }
+
+        function simulateExecution(type) {
+            clearSim();
+            
+            if (type === 'compiler') {
+                // COMPILER SIMULATION
+                simIcon.classList.add('animate-spin', 'text-purple-500');
+                simIcon.classList.remove('text-slate-300');
+                simStatus.innerText = 'Compiling...';
+                simStatus.className = 'text-center font-bold text-purple-600';
+                simDesc.innerText = 'Analyzing entire file and generating executable object code.';
+
+                // Highlight all at once (scanning)
+                simLines.forEach(line => line.classList.add('exec-active'));
+
+                simTimeoutIds.push(setTimeout(() => {
+                    // Compilation done
+                    simLines.forEach(line => {
+                        line.classList.remove('exec-active');
+                        line.classList.add('exec-done');
+                    });
+                    simIcon.classList.remove('animate-spin');
+                    simStatus.innerText = 'Compiled Successfully!';
+                    simStatus.className = 'text-center font-bold text-green-600';
+                    outExe.classList.remove('hidden');
+
+                    // Simulate running the generated executable
+                    simTimeoutIds.push(setTimeout(() => {
+                        simOutput.innerHTML = `<span class="text-slate-400">$ ./program.exe</span><br>15`;
+                    }, 500));
+                }, 1500));
+
+            } else {
+                // INTERPRETER SIMULATION
+                simIcon.classList.add('animate-spin', 'text-teal-500');
+                simIcon.classList.remove('text-slate-300');
+                simStatus.innerText = 'Interpreting...';
+                simStatus.className = 'text-center font-bold text-teal-600';
+                simDesc.innerText = 'Translating and executing code line by line.';
+
+                let delay = 0;
+                
+                simLines.forEach((line, index) => {
+                    // Activate line
+                    simTimeoutIds.push(setTimeout(() => {
+                        // Clear previous active
+                        if(index > 0) {
+                            simLines[index-1].classList.remove('exec-active');
+                            simLines[index-1].classList.add('exec-done');
+                        }
+                        line.classList.add('exec-active');
+                        
+                        // If it's the last line (print), show output
+                        if (index === 3) {
+                            simOutput.innerHTML = `<span class="text-slate-400">Executing line 4...</span><br>15`;
+                        } else {
+                            simOutput.innerHTML = `<span class="text-slate-400">Executing line ${index+1}...</span>`;
+                        }
+                    }, delay));
+                    
+                    delay += 800; // time per line
+                });
+
+                // Finish
+                simTimeoutIds.push(setTimeout(() => {
+                    simLines[3].classList.remove('exec-active');
+                    simLines[3].classList.add('exec-done');
+                    simIcon.classList.remove('animate-spin');
+                    simStatus.innerText = 'Execution Complete';
+                    simStatus.className = 'text-center font-bold text-green-600';
+                }, delay));
+            }
+        }
+
+        /* =========================================
+           LIVE PRINTF PARSER LOGIC
+           ========================================= */
+        const consoleOutput = document.getElementById('live-console');
+        const printfInput = document.getElementById('printf-input');
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+
+        function updateConsole() {
+            let rawStr = printfInput.value;
+            
+            // 1. Escape HTML to prevent injection and show literal tags if typed
+            let safeStr = escapeHTML(rawStr);
+
+            // 2. Parse C Escape Sequences
+            // Replace literal \n with <br>
+            let parsedStr = safeStr.replace(/\\n/g, '<br>');
+            
+            // Replace literal \t with specific spacing (using css padding or non-breaking spaces)
+            parsedStr = parsedStr.replace(/\\t/g, '<span class="inline-block w-12 border-b border-green-800/30 border-dashed" title="Tab Space"></span>');
+            
+            // Replace \\ with \
+            parsedStr = parsedStr.replace(/\\\\/g, '\\');
+            
+            // Replace \" with "
+            parsedStr = parsedStr.replace(/\\&quot;/g, '&quot;');
+
+            // Inject into DOM
+            consoleOutput.innerHTML = parsedStr + '<span class="animate-pulse font-bold ml-1 text-green-500">_</span>';
+        }
+
+        // Initialize console on load
+        window.onload = () => {
+            updateConsole();
+        };
+
+        // Make input dynamically resize slightly based on content (optional enhancement)
+        printfInput.addEventListener('input', function() {
+            // Keep a min width, but expand if needed
+            const len = this.value.length;
+            if(len > 30) {
+                this.style.width = Math.min(len * 8.5 + 20, 500) + 'px';
+            }
+        });
+        
+        // Trigger initial resize logic
+        printfInput.dispatchEvent(new Event('input'));
+
+    </script>
+</body>
+</html>

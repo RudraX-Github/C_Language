@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Loop Labyrinth: C Control Flow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            scroll-behavior: smooth;
+        }
+        
+        .code-font { font-family: 'Fira Code', monospace; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        
+        /* Highlight active logic branch */
+        .code-line { transition: all 0.3s; opacity: 0.6; border-left: 4px solid transparent; padding-left: 8px;}
+        .code-line.active { opacity: 1; border-left-color: #3b82f6; background-color: rgba(59, 130, 246, 0.15); transform: translateX(4px); font-weight: bold;}
+        .code-line.evaluating { opacity: 1; border-left-color: #f59e0b; background-color: rgba(245, 158, 11, 0.15); transform: translateX(2px); }
+        .code-line.jump { opacity: 1; border-left-color: #ef4444; background-color: rgba(239, 68, 68, 0.15); transform: translateX(4px); font-weight: bold;}
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Star Pattern styles */
+        .star-cell { display: inline-block; min-width: 24px; height: 24px; text-align: center; animation: popIn 0.3s ease-out forwards; color: #fbbf24;}
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white p-4 shadow-md sticky top-0 z-50 border-b-4 border-emerald-500">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i data-lucide="repeat-2" class="text-emerald-400 w-8 h-8"></i>
+                <div>
+                    <h1 class="text-xl font-bold">The Loop Labyrinth</h1>
+                    <p class="text-xs text-slate-400">C Programming: For, While, Do-While, Break, Continue, Goto & Patterns</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex gap-6 text-sm font-medium text-slate-300">
+                <a href="#section-types" class="hover:text-white transition-colors">1. Loop Anatomy</a>
+                <a href="#section-vs" class="hover:text-white transition-colors">2. While vs Do-While</a>
+                <a href="#section-control" class="hover:text-white transition-colors">3. Control Stmts</a>
+                <a href="#section-exercises" class="hover:text-white transition-colors">4. Nested Patterns</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-1 w-full max-w-6xl mx-auto p-6 md:p-10 space-y-24 pb-32">
+        
+        <!-- ==========================================
+             SECTION 1: Loop Types & Anatomy
+             ========================================== -->
+        <section id="section-types" class="scroll-mt-24">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-4 flex items-center gap-3"><i data-lucide="refresh-cw" class="text-blue-500 w-8 h-8"></i> 1. Types of Loops & Anatomy</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg">
+                    <p>Loops execute a block of code repeatedly as long as a condition is true. C has three primary loop types: <b>For</b>, <b>While</b>, and <b>Do-While</b>. They are categorized into <i>Entry-Controlled</i> (Condition checked before entry) and <i>Exit-Controlled</i> (Condition checked after execution).</p>
+                </div>
+            </div>
+
+            <!-- View Toggles -->
+            <div class="flex flex-wrap gap-2 mb-4">
+                <button onclick="setLoopMode('for')" id="tab-loop-for" class="px-6 py-2 rounded-lg font-bold text-sm bg-blue-600 text-white shadow border border-blue-500 transition-colors">For Loop</button>
+                <button onclick="setLoopMode('while')" id="tab-loop-while" class="px-6 py-2 rounded-lg font-bold text-sm bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-700">While Loop</button>
+                <button onclick="setLoopMode('dowhile')" id="tab-loop-dowhile" class="px-6 py-2 rounded-lg font-bold text-sm bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-700">Do-While Loop</button>
+            </div>
+
+            <div class="bg-slate-900 rounded-xl shadow-xl border border-slate-700 flex flex-col lg:flex-row overflow-hidden">
+                
+                <!-- C Code Editor View -->
+                <div class="flex-1 border-b lg:border-b-0 lg:border-r border-slate-700 flex flex-col">
+                    <div class="bg-slate-800 px-4 py-3 border-b border-slate-700 flex justify-between items-center text-white">
+                        <span class="font-bold flex items-center gap-2 text-sm"><i data-lucide="terminal" class="w-4 h-4 text-emerald-400"></i> loop_test.c</span>
+                        <div id="loop-type-badge" class="bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded text-xs font-bold border border-blue-500/50">Entry-Controlled</div>
+                    </div>
+                    
+                    <div class="p-5 flex-1 code-font text-sm leading-relaxed text-slate-300 relative min-h-[300px]">
+                        <div class="mb-3 text-slate-500 italic">#include &lt;stdio.h&gt;<br>int main() {</div>
+                        
+                        <div class="ml-4 mb-4 flex items-center gap-2">
+                            <span class="text-slate-400">Target iterations (N) = </span>
+                            <input type="number" id="loop-n" value="3" min="1" max="10" oninput="resetLoopSim()" class="bg-slate-700 text-orange-300 border border-slate-500 rounded px-2 w-16 outline-none focus:border-blue-400 text-center font-bold">
+                        </div>
+
+                        <!-- 1. FOR LOOP -->
+                        <div id="view-for" class="block">
+                            <div id="for-init" class="code-line ml-4">
+                                <span class="text-blue-400 font-bold">for</span> (<span class="text-emerald-400">int i = 1</span>; <span class="text-amber-400" id="for-cond-disp">i &lt;= 3</span>; <span class="text-purple-400">i++</span>) {
+                            </div>
+                            <div id="for-body" class="code-line ml-8 text-green-300">printf("Iteration %d\n", i);</div>
+                            <div class="ml-4 text-slate-300">}</div>
+                        </div>
+
+                        <!-- 2. WHILE LOOP -->
+                        <div id="view-while" class="hidden">
+                            <div id="while-init" class="code-line ml-4"><span class="text-blue-400 font-bold">int</span> <span class="text-emerald-400">i = 1</span>;</div>
+                            <div id="while-cond" class="code-line ml-4 mt-2">
+                                <span class="text-blue-400 font-bold">while</span> (<span class="text-amber-400" id="while-cond-disp">i &lt;= 3</span>) {
+                            </div>
+                            <div id="while-body" class="code-line ml-8 text-green-300">printf("Iteration %d\n", i);</div>
+                            <div id="while-update" class="code-line ml-8 text-purple-400">i++;</div>
+                            <div class="ml-4 text-slate-300">}</div>
+                        </div>
+
+                        <!-- 3. DO-WHILE LOOP -->
+                        <div id="view-dowhile" class="hidden">
+                            <div id="do-init" class="code-line ml-4"><span class="text-blue-400 font-bold">int</span> <span class="text-emerald-400">i = 1</span>;</div>
+                            <div id="do-start" class="code-line ml-4 mt-2"><span class="text-blue-400 font-bold">do</span> {</div>
+                            <div id="do-body" class="code-line ml-8 text-green-300">printf("Iteration %d\n", i);</div>
+                            <div id="do-update" class="code-line ml-8 text-purple-400">i++;</div>
+                            <div id="do-cond" class="code-line ml-4">} <span class="text-blue-400 font-bold">while</span> (<span class="text-amber-400" id="do-cond-disp">i &lt;= 3</span>);</div>
+                        </div>
+
+                        <div class="ml-4 mt-6 text-slate-500 italic"><span class="text-blue-400 font-bold">return</span> <span class="text-orange-300">0</span>;<br>}</div>
+                        
+                        <!-- Overlay Memory Box -->
+                        <div class="absolute top-6 right-6 bg-slate-800 border-2 border-slate-600 rounded-lg p-3 shadow-lg flex flex-col items-center min-w-[80px]">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Memory</div>
+                            <div class="text-emerald-400 font-mono text-sm">i</div>
+                            <div id="mem-i" class="text-3xl font-mono font-bold text-white mt-1 transition-all">?</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation & Output -->
+                <div class="lg:w-80 flex flex-col bg-[#121212]">
+                    <div class="p-6 flex-1 flex flex-col">
+                        <button onclick="runLoopSim()" id="btn-loop-run" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-lg font-bold transition-colors shadow-[0_4px_0_#059669] active:shadow-[0_0px_0_#059669] active:translate-y-[4px] flex items-center justify-center gap-2 mb-6">
+                            Run Step-by-Step <i data-lucide="play" class="w-4 h-4"></i>
+                        </button>
+
+                        <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Process Log</div>
+                        <div id="loop-eval-log" class="bg-slate-800 border border-slate-700 rounded-lg p-3 code-font text-xs text-slate-300 h-32 overflow-y-auto mb-6 flex flex-col gap-2 shadow-inner">
+                            <span class="text-slate-500 italic">Waiting...</span>
+                        </div>
+
+                        <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Console Output</div>
+                        <div id="loop-console" class="bg-black border border-slate-700 rounded-lg p-3 code-font text-sm text-green-400 flex-1 min-h-[100px] shadow-inner">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <hr class="border-slate-200">
+
+        <!-- ==========================================
+             SECTION 2: While vs Do-While Showdown
+             ========================================== -->
+        <section id="section-vs" class="scroll-mt-24">
+            <div class="mb-8">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-800 font-bold text-sm mb-3">
+                    <i data-lucide="swords" class="w-4 h-4"></i> The Showdown
+                </div>
+                <h2 class="text-3xl font-bold mb-4">2. While vs. Do-While</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg">
+                    <p>The primary difference is execution guarantee. A <b>While</b> loop might never execute if the condition is false initially. A <b>Do-While</b> loop executes its body <b>at least once</b> before ever checking the condition.</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8">
+                
+                <div class="flex flex-col md:flex-row items-center justify-center gap-4 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div class="font-bold text-slate-700 code-font">int x = </div>
+                    <input type="number" id="vs-x" value="10" oninput="resetVsSim()" class="w-20 border-2 border-purple-400 rounded-lg px-2 py-1 outline-none text-center font-bold text-purple-700 text-xl">
+                    <div class="font-bold text-slate-700 ml-4 code-font">Condition: x < 5</div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- While -->
+                    <div class="flex flex-col bg-slate-900 rounded-xl overflow-hidden border border-slate-700 shadow-lg">
+                        <div class="bg-slate-800 text-white text-center py-2 font-bold text-sm border-b border-slate-700 uppercase tracking-widest text-blue-400">While Loop</div>
+                        <div class="p-5 code-font text-sm text-slate-300 flex-1">
+                            <div id="vs-while-cond" class="code-line"><span class="text-blue-400 font-bold">while</span> (x &lt; <span class="text-amber-400">5</span>) {</div>
+                            <div id="vs-while-body" class="code-line ml-4 text-green-300">printf("Running!");</div>
+                            <div>}</div>
+                        </div>
+                        <div class="bg-black p-4 border-t border-slate-700 min-h-[80px]">
+                            <div class="text-[10px] text-slate-500 uppercase tracking-widest mb-1 font-bold">Output:</div>
+                            <div id="vs-while-out" class="code-font text-green-400 animate-fade-in text-sm"></div>
+                        </div>
+                    </div>
+
+                    <!-- Do While -->
+                    <div class="flex flex-col bg-slate-900 rounded-xl overflow-hidden border border-slate-700 shadow-lg">
+                        <div class="bg-slate-800 text-white text-center py-2 font-bold text-sm border-b border-slate-700 uppercase tracking-widest text-emerald-400">Do-While Loop</div>
+                        <div class="p-5 code-font text-sm text-slate-300 flex-1">
+                            <div id="vs-do-start" class="code-line"><span class="text-blue-400 font-bold">do</span> {</div>
+                            <div id="vs-do-body" class="code-line ml-4 text-green-300">printf("Running!");</div>
+                            <div id="vs-do-cond" class="code-line">} <span class="text-blue-400 font-bold">while</span> (x &lt; <span class="text-amber-400">5</span>);</div>
+                        </div>
+                        <div class="bg-black p-4 border-t border-slate-700 min-h-[80px]">
+                            <div class="text-[10px] text-slate-500 uppercase tracking-widest mb-1 font-bold">Output:</div>
+                            <div id="vs-do-out" class="code-font text-green-400 animate-fade-in text-sm"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 text-center">
+                    <button onclick="runVsSim()" id="btn-vs-run" class="bg-purple-600 hover:bg-purple-500 text-white px-8 py-3 rounded-lg font-bold shadow-[0_4px_0_#7e22ce] active:shadow-[0_0px_0_#7e22ce] active:translate-y-[4px] transition-all inline-flex items-center gap-2">
+                        Test Both Loops <i data-lucide="swords" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <hr class="border-slate-200">
+
+        <!-- ==========================================
+             SECTION 3: Control Statements
+             ========================================== -->
+        <section id="section-control" class="scroll-mt-24">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-4 flex items-center gap-3"><i data-lucide="signpost" class="text-rose-500 w-8 h-8"></i> 3. Control Statements</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg">
+                    <p>C provides jump statements to alter the normal flow of a loop:</p>
+                    <ul class="list-disc pl-5 text-sm space-y-1">
+                        <li><code class="font-bold bg-slate-200 px-1 rounded text-rose-600">break;</code>: Instantly terminates the entire loop and exits.</li>
+                        <li><code class="font-bold bg-slate-200 px-1 rounded text-amber-600">continue;</code>: Skips the rest of the current iteration and jumps straight to the next iteration.</li>
+                        <li><code class="font-bold bg-slate-200 px-1 rounded text-purple-600">goto label;</code>: Jumps to a specific marked label anywhere in the function (generally avoided in modern C, but exists).</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 rounded-xl shadow-xl border border-slate-700 flex flex-col lg:flex-row overflow-hidden text-white">
+                
+                <!-- Code Area -->
+                <div class="flex-1 border-b lg:border-b-0 lg:border-r border-slate-700 p-6 flex flex-col">
+                    <div class="flex items-center justify-between mb-6 bg-slate-800 p-3 rounded-lg border border-slate-700">
+                        <div class="font-bold flex items-center gap-2 text-sm"><i data-lucide="zap" class="text-rose-400 w-4 h-4"></i> Jump Logic</div>
+                        <div class="flex items-center gap-2 text-sm code-font">
+                            <span>Action at i=3:</span>
+                            <select id="ctrl-action" onchange="resetCtrlSim()" class="bg-slate-700 border border-slate-500 text-white rounded px-2 py-1 outline-none font-bold">
+                                <option value="none">None (Normal)</option>
+                                <option value="break">break;</option>
+                                <option value="continue">continue;</option>
+                                <option value="goto">goto end;</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="code-font text-sm leading-relaxed text-slate-300 flex-1">
+                        <div id="ctrl-for" class="code-line"><span class="text-blue-400 font-bold">for</span> (<span class="text-emerald-400">int i = 1</span>; i &lt;= <span class="text-amber-400">5</span>; <span class="text-purple-400">i++</span>) {</div>
+                        
+                        <div id="ctrl-if" class="code-line ml-4 mt-2">
+                            <span class="text-blue-400 font-bold">if</span> (i == <span class="text-orange-300">3</span>) {
+                        </div>
+                        
+                        <!-- Dynamic Statement -->
+                        <div id="ctrl-stmt" class="code-line ml-8 text-rose-400 font-bold italic">// No jump statement selected</div>
+                        
+                        <div class="code-line ml-4 mb-2">}</div>
+
+                        <div id="ctrl-print" class="code-line ml-4 text-green-300">printf("Value: %d\n", i);</div>
+                        <div class="ml-2">}</div>
+                        
+                        <div id="ctrl-label" class="code-line mt-4 text-purple-400 font-bold">end:</div>
+                        <div id="ctrl-end" class="code-line ml-4 text-slate-400">printf("Loop Finished\n");</div>
+                    </div>
+                </div>
+
+                <!-- Simulation Output -->
+                <div class="lg:w-80 bg-[#121212] p-6 flex flex-col">
+                    <button onclick="runCtrlSim()" id="btn-ctrl-run" class="w-full bg-rose-600 hover:bg-rose-500 text-white py-3 rounded-lg font-bold shadow-[0_4px_0_#e11d48] active:shadow-[0_0px_0_#e11d48] active:translate-y-[4px] transition-all flex items-center justify-center gap-2 mb-6">
+                        Execute Flow <i data-lucide="play" class="w-4 h-4"></i>
+                    </button>
+
+                    <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Current i</div>
+                    <div id="ctrl-mem-i" class="text-3xl font-mono text-center font-bold text-emerald-400 mb-6 bg-slate-800 py-2 rounded-lg border border-slate-700 shadow-inner">?</div>
+
+                    <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Terminal Output</div>
+                    <div id="ctrl-console" class="border border-slate-700 rounded-lg p-4 code-font text-sm text-green-400 flex-1 bg-black shadow-inner flex flex-col gap-1">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <hr class="border-slate-200">
+
+        <!-- ==========================================
+             SECTION 4: Looping Exercises (Patterns)
+             ========================================== -->
+        <section id="section-exercises" class="scroll-mt-24">
+            <div class="mb-8">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-800 font-bold text-sm mb-3">
+                    <i data-lucide="star" class="w-4 h-4"></i> Classic C Exercise
+                </div>
+                <h2 class="text-3xl font-bold mb-4">4. Nested Loops & Patterns</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg">
+                    <p>Printing patterns is a classic way to master <b>nested loops</b>. The outer loop controls the <i>rows</i>, and the inner loop controls the <i>columns</i> printed on that row. Load a preset or manually edit the configuration below to build your own patterns!</p>
+                </div>
+            </div>
+
+            <!-- PRESETS -->
+            <div class="flex items-center gap-3 mb-6 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <i data-lucide="library" class="text-amber-500 w-5 h-5"></i>
+                <span class="font-bold text-slate-700 text-sm">Load Pattern Preset:</span>
+                <select id="pat-presets" onchange="loadPreset()" class="bg-amber-50 border border-amber-300 text-amber-900 rounded-lg px-3 py-1.5 text-sm font-bold outline-none focus:border-amber-600 shadow-sm cursor-pointer">
+                    <option value="custom">Custom (Manual)</option>
+                    <option value="right_triangle">1. Right Triangle</option>
+                    <option value="inverted_triangle">2. Inverted Triangle</option>
+                    <option value="square">3. Square Matrix</option>
+                    <option value="number_triangle">4. Number Triangle (Cols)</option>
+                    <option value="row_numbers">5. Number Triangle (Rows)</option>
+                    <option value="infinite">6. 🚨 Infinite Loop Danger 🚨</option>
+                </select>
+            </div>
+
+            <!-- Pattern Configuration Panel -->
+            <div class="bg-slate-100 border border-slate-300 rounded-xl p-5 mb-6 shadow-inner">
+                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2"><i data-lucide="settings-2" class="w-4 h-4"></i> Pattern Configuration</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                    <!-- Global -->
+                    <div class="space-y-3">
+                        <label class="font-bold text-slate-700 block border-b border-slate-300 pb-1">Global Variables</label>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-600 font-mono">rows =</span>
+                            <input type="number" id="pat-rows" value="5" min="1" max="10" class="w-16 border border-slate-400 rounded px-2 py-1 outline-none focus:border-amber-500 font-mono text-center shadow-sm" oninput="updatePatternCode(true)">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-600 font-mono text-xs">char = <br><span class="text-[9px] text-slate-400">(use 'i' or 'j' for nums)</span></span>
+                            <input type="text" id="pat-char" value="* " class="w-16 border border-slate-400 rounded px-2 py-1 outline-none focus:border-amber-500 font-mono text-center shadow-sm" oninput="updatePatternCode(true)">
+                        </div>
+                    </div>
+                    
+                    <!-- Outer Loop -->
+                    <div class="space-y-3">
+                        <label class="font-bold text-blue-700 block border-b border-blue-200 pb-1">Outer Loop (i)</label>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-600 font-mono text-xs">Init: <span class="font-bold">i =</span></span>
+                            <input type="text" id="pat-i-init" value="1" class="w-16 border border-slate-400 rounded px-2 py-1 outline-none focus:border-blue-500 font-mono text-center shadow-sm" oninput="updatePatternCode(true)">
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-slate-600 font-mono text-xs">Cond: <span class="font-bold">i</span></span>
+                            <select id="pat-i-op" class="flex-1 border border-slate-400 rounded px-1 py-1 outline-none focus:border-blue-500 font-mono text-center shadow-sm" onchange="updatePatternCode(true)">
+                                <option value="<=">&lt;=</option>
+                                <option value="<">&lt;</option>
+                                <option value=">=">&gt;=</option>
+                                <option value=">">&gt;</option>
+                            </select> 
+                            <input type="text" id="pat-i-target" value="rows" class="w-16 border border-slate-400 rounded px-2 py-1 outline-none focus:border-blue-500 font-mono text-center shadow-sm" oninput="updatePatternCode(true)">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-600 font-mono text-xs">Step:</span>
+                            <select id="pat-i-inc" class="w-16 border border-slate-400 rounded px-1 py-1 outline-none focus:border-blue-500 font-mono text-center shadow-sm" onchange="updatePatternCode(true)">
+                                <option value="++">i++</option>
+                                <option value="--">i--</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Inner Loop -->
+                    <div class="space-y-3">
+                        <label class="font-bold text-emerald-700 block border-b border-emerald-200 pb-1">Inner Loop (j)</label>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-600 font-mono text-xs">Init: <span class="font-bold">j =</span></span>
+                            <input type="text" id="pat-j-init" value="1" class="w-16 border border-slate-400 rounded px-2 py-1 outline-none focus:border-emerald-500 font-mono text-center shadow-sm" oninput="updatePatternCode(true)">
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-slate-600 font-mono text-xs">Cond: <span class="font-bold">j</span></span>
+                            <select id="pat-j-op" class="flex-1 border border-slate-400 rounded px-1 py-1 outline-none focus:border-emerald-500 font-mono text-center shadow-sm" onchange="updatePatternCode(true)">
+                                <option value="<=">&lt;=</option>
+                                <option value="<">&lt;</option>
+                                <option value=">=">&gt;=</option>
+                                <option value=">">&gt;</option>
+                            </select> 
+                            <input type="text" id="pat-j-target" value="i" class="w-16 border border-slate-400 rounded px-2 py-1 outline-none focus:border-emerald-500 font-mono text-center shadow-sm" oninput="updatePatternCode(true)">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-600 font-mono text-xs">Step:</span>
+                            <select id="pat-j-inc" class="w-16 border border-slate-400 rounded px-1 py-1 outline-none focus:border-emerald-500 font-mono text-center shadow-sm" onchange="updatePatternCode(true)">
+                                <option value="++">j++</option>
+                                <option value="--">j--</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-lg p-6 md:p-8">
+                <div class="grid lg:grid-cols-2 gap-8">
+                    
+                    <!-- Clean Code View -->
+                    <div class="bg-[#1e1e1e] rounded-xl shadow-xl border border-slate-700 flex flex-col overflow-hidden">
+                        <div class="bg-[#2d2d2d] px-4 py-3 border-b border-black flex justify-between items-center text-white">
+                            <span class="font-bold flex items-center gap-2 text-sm"><i data-lucide="terminal" class="w-4 h-4 text-emerald-400"></i> pattern_builder.c</span>
+                        </div>
+                        
+                        <div class="p-6 code-font text-sm leading-[2.5rem] text-slate-300 flex-1">
+                            <div><span class="text-blue-400 font-bold">int</span> rows = <span id="disp-rows" class="text-orange-300">5</span>;</div>
+                            
+                            <div class="text-slate-500 italic mt-2 -mb-2">// Outer loop controls rows</div>
+                            <div id="pat-outer" class="code-line -ml-2 pl-2 rounded"><span class="text-blue-400 font-bold">for</span> (<span class="text-emerald-400">int i = <span id="disp-i-init">1</span></span>; i <span id="disp-i-op" class="text-amber-400 font-bold">&lt;=</span> <span id="disp-i-target" class="text-amber-400">rows</span>; <span id="disp-i-inc" class="text-purple-400">i++</span>) {</div>
+                            
+                            <div class="ml-4 text-slate-500 italic mt-2 -mb-2">// Inner loop controls columns</div>
+                            <div id="pat-inner" class="code-line ml-4 rounded"><span class="text-blue-400 font-bold">for</span> (<span class="text-emerald-400">int j = <span id="disp-j-init">1</span></span>; j <span id="disp-j-op" class="text-amber-400 font-bold">&lt;=</span> <span id="disp-j-target" class="text-amber-400">i</span>; <span id="disp-j-inc" class="text-purple-400">j++</span>) {</div>
+                            
+                            <div id="pat-print" class="code-line ml-10 text-green-300 rounded">printf("<span id="disp-char" class="text-orange-300">* </span>");</div>
+                            <div class="ml-4">}</div>
+                            
+                            <div id="pat-newline" class="code-line ml-4 text-green-300 rounded">printf("\n");</div>
+                            <div>}</div>
+                        </div>
+
+                        <div class="bg-black border-t border-slate-700 p-4 flex justify-between items-center">
+                            <div class="flex gap-4 code-font text-sm">
+                                <div class="bg-slate-800 px-3 py-1 rounded border border-slate-700 text-slate-300 shadow-inner">i = <span id="pat-val-i" class="text-emerald-400 font-bold">?</span></div>
+                                <div class="bg-slate-800 px-3 py-1 rounded border border-slate-700 text-slate-300 shadow-inner">j = <span id="pat-val-j" class="text-emerald-400 font-bold">?</span></div>
+                            </div>
+                            <button onclick="runPatternSim()" id="btn-pat-run" class="bg-amber-500 hover:bg-amber-400 text-slate-900 px-4 py-2 rounded font-bold shadow-[0_3px_0_#b45309] active:shadow-[0_0px_0_#b45309] active:translate-y-[3px] transition-all flex items-center gap-2 text-xs">
+                                Draw Pattern <i data-lucide="paintbrush-2" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Visual Output -->
+                    <div class="bg-slate-50 rounded-xl border border-slate-200 flex flex-col items-center p-8 relative shadow-inner overflow-hidden min-h-[300px] overflow-y-auto">
+                        <div class="absolute top-4 left-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Output Console</div>
+                        
+                        <div id="pattern-canvas" class="code-font text-2xl font-bold leading-loose tracking-[0.2em] text-center mt-6 w-full">
+                            <!-- Stars injected here -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        /* =========================================
+           SECTION 1: LOOP ANATOMY
+           ========================================= */
+        let currentLoopMode = 'for';
+
+        function setLoopMode(mode) {
+            currentLoopMode = mode;
+            resetLoopSim();
+
+            // Reset Tabs UI
+            document.querySelectorAll('[id^="tab-loop-"]').forEach(el => {
+                el.className = "px-6 py-2 rounded-lg font-bold text-sm bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-700";
+            });
+            const activeTab = document.getElementById(`tab-loop-${mode}`);
+            activeTab.className = "px-6 py-2 rounded-lg font-bold text-sm bg-blue-600 text-white shadow border border-blue-500 transition-colors";
+
+            // Hide/Show Views
+            document.getElementById('view-for').style.display = mode === 'for' ? 'block' : 'none';
+            document.getElementById('view-while').style.display = mode === 'while' ? 'block' : 'none';
+            document.getElementById('view-dowhile').style.display = mode === 'dowhile' ? 'block' : 'none';
+
+            // Update Badge
+            const badge = document.getElementById('loop-type-badge');
+            if (mode === 'dowhile') {
+                badge.innerText = 'Exit-Controlled';
+                badge.className = 'bg-rose-900/50 text-rose-300 px-2 py-0.5 rounded text-xs font-bold border border-rose-500/50';
+            } else {
+                badge.innerText = 'Entry-Controlled';
+                badge.className = 'bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded text-xs font-bold border border-blue-500/50';
+            }
+        }
+
+        function resetLoopSim() {
+            document.querySelectorAll('#section-types .code-line').forEach(el => {
+                el.classList.remove('active', 'evaluating');
+            });
+            document.getElementById('loop-eval-log').innerHTML = '<span class="text-slate-500 italic">Waiting...</span>';
+            document.getElementById('loop-console').innerHTML = '';
+            document.getElementById('mem-i').innerText = '?';
+            
+            // Sync target N
+            const n = document.getElementById('loop-n').value;
+            document.getElementById('for-cond-disp').innerText = `i <= ${n}`;
+            document.getElementById('while-cond-disp').innerText = `i <= ${n}`;
+            document.getElementById('do-cond-disp').innerText = `i <= ${n}`;
+        }
+
+        async function runLoopSim() {
+            resetLoopSim();
+            const btn = document.getElementById('btn-loop-run');
+            btn.disabled = true;
+            btn.innerHTML = 'Running...';
+
+            const n = parseInt(document.getElementById('loop-n').value) || 3;
+            const log = document.getElementById('loop-eval-log');
+            const consoleOut = document.getElementById('loop-console');
+            const memI = document.getElementById('mem-i');
+
+            const addLog = (msg) => {
+                log.innerHTML += `<div class="animate-fade-in"><span class="text-emerald-400">></span> ${msg}</div>`;
+                log.scrollTop = log.scrollHeight;
+            };
+            const updateMem = (val) => {
+                memI.innerText = val;
+                memI.classList.remove('animate-fade-in');
+                void memI.offsetWidth;
+                memI.classList.add('animate-fade-in');
+            }
+            const printOut = (val) => {
+                consoleOut.innerHTML += `<div class="animate-fade-in">Iteration ${val}</div>`;
+            }
+
+            let i = 1;
+
+            if (currentLoopMode === 'for') {
+                const fInit = document.getElementById('for-init');
+                const fBody = document.getElementById('for-body');
+                
+                fInit.classList.add('active');
+                addLog('Initialization: i = 1');
+                updateMem(i);
+                await sleep(800);
+
+                while (true) {
+                    fInit.classList.replace('active', 'evaluating');
+                    addLog(`Check Condition: ${i} <= ${n}?`);
+                    await sleep(800);
+
+                    if (i <= n) {
+                        addLog(`<span class="text-green-400 font-bold">True.</span> Enter loop body.`);
+                        fInit.classList.remove('evaluating');
+                        fBody.classList.add('active');
+                        printOut(i);
+                        await sleep(800);
+                        fBody.classList.remove('active');
+
+                        fInit.classList.add('evaluating'); // Simulate i++ part
+                        addLog(`Update: i++`);
+                        i++;
+                        updateMem(i);
+                        await sleep(800);
+                        fInit.classList.remove('evaluating');
+                    } else {
+                        addLog(`<span class="text-red-400 font-bold">False.</span> Exit loop.`);
+                        fInit.classList.remove('evaluating');
+                        break;
+                    }
+                }
+            } 
+            else if (currentLoopMode === 'while') {
+                const wInit = document.getElementById('while-init');
+                const wCond = document.getElementById('while-cond');
+                const wBody = document.getElementById('while-body');
+                const wUpdate = document.getElementById('while-update');
+
+                wInit.classList.add('active');
+                addLog('Initialization: i = 1');
+                updateMem(i);
+                await sleep(800);
+                wInit.classList.remove('active');
+
+                while (true) {
+                    wCond.classList.add('evaluating');
+                    addLog(`Check Condition (Entry): ${i} <= ${n}?`);
+                    await sleep(800);
+
+                    if (i <= n) {
+                        addLog(`<span class="text-green-400 font-bold">True.</span> Enter loop body.`);
+                        wCond.classList.replace('evaluating', 'active');
+                        await sleep(400);
+                        wCond.classList.remove('active');
+
+                        wBody.classList.add('active');
+                        printOut(i);
+                        await sleep(800);
+                        wBody.classList.remove('active');
+
+                        wUpdate.classList.add('active');
+                        addLog(`Update: i++`);
+                        i++;
+                        updateMem(i);
+                        await sleep(800);
+                        wUpdate.classList.remove('active');
+                    } else {
+                        addLog(`<span class="text-red-400 font-bold">False.</span> Exit loop.`);
+                        wCond.classList.remove('evaluating');
+                        break;
+                    }
+                }
+            }
+            else if (currentLoopMode === 'dowhile') {
+                const dInit = document.getElementById('do-init');
+                const dStart = document.getElementById('do-start');
+                const dBody = document.getElementById('do-body');
+                const dUpdate = document.getElementById('do-update');
+                const dCond = document.getElementById('do-cond');
+
+                dInit.classList.add('active');
+                addLog('Initialization: i = 1');
+                updateMem(i);
+                await sleep(800);
+                dInit.classList.remove('active');
+
+                while (true) {
+                    dStart.classList.add('active');
+                    addLog(`Enter Do block (No condition check yet)`);
+                    await sleep(600);
+                    dStart.classList.remove('active');
+
+                    dBody.classList.add('active');
+                    printOut(i);
+                    await sleep(800);
+                    dBody.classList.remove('active');
+
+                    dUpdate.classList.add('active');
+                    addLog(`Update: i++`);
+                    i++;
+                    updateMem(i);
+                    await sleep(800);
+                    dUpdate.classList.remove('active');
+
+                    dCond.classList.add('evaluating');
+                    addLog(`Check Condition (Exit): ${i} <= ${n}?`);
+                    await sleep(800);
+
+                    if (i <= n) {
+                        addLog(`<span class="text-green-400 font-bold">True.</span> Repeat loop.`);
+                        dCond.classList.remove('evaluating');
+                    } else {
+                        addLog(`<span class="text-red-400 font-bold">False.</span> Exit loop.`);
+                        dCond.classList.remove('evaluating');
+                        break;
+                    }
+                }
+            }
+
+            addLog('Loop process finished.');
+            btn.disabled = false;
+            btn.innerHTML = 'Run Step-by-Step <i data-lucide="play" class="w-4 h-4"></i>';
+            lucide.createIcons();
+        }
+
+        /* =========================================
+           SECTION 2: VS SHOWDOWN
+           ========================================= */
+        function resetVsSim() {
+            document.getElementById('vs-while-out').innerHTML = '';
+            document.getElementById('vs-do-out').innerHTML = '';
+            document.querySelectorAll('#section-vs .code-line').forEach(el => {
+                el.classList.remove('active', 'evaluating');
+            });
+        }
+
+        async function runVsSim() {
+            resetVsSim();
+            const btn = document.getElementById('btn-vs-run');
+            btn.disabled = true;
+            
+            const x = parseInt(document.getElementById('vs-x').value) || 0;
+            
+            // While Simulation
+            const wCond = document.getElementById('vs-while-cond');
+            const wBody = document.getElementById('vs-while-body');
+            const wOut = document.getElementById('vs-while-out');
+            
+            wCond.classList.add('evaluating');
+            await sleep(800);
+            
+            if (x < 5) {
+                wCond.classList.replace('evaluating', 'active');
+                await sleep(400);
+                wCond.classList.remove('active');
+                wBody.classList.add('active');
+                wOut.innerHTML = 'Running!<br><span class="text-slate-500 italic text-xs">(Infinite loop prevented in sim)</span>';
+                await sleep(800);
+                wBody.classList.remove('active');
+            } else {
+                wOut.innerHTML = '<span class="text-slate-500 italic">Condition false. Skipped entirely.</span>';
+                wCond.classList.remove('evaluating');
+                await sleep(800);
+            }
+
+            // Do-While Simulation
+            const dStart = document.getElementById('vs-do-start');
+            const dBody = document.getElementById('vs-do-body');
+            const dCond = document.getElementById('vs-do-cond');
+            const dOut = document.getElementById('vs-do-out');
+
+            dStart.classList.add('active');
+            await sleep(600);
+            dStart.classList.remove('active');
+            
+            dBody.classList.add('active');
+            dOut.innerHTML = 'Running!';
+            await sleep(800);
+            dBody.classList.remove('active');
+
+            dCond.classList.add('evaluating');
+            await sleep(800);
+
+            if (x < 5) {
+                dOut.innerHTML += '<br><span class="text-slate-500 italic text-xs">(Infinite loop prevented in sim)</span>';
+            } else {
+                dOut.innerHTML += '<br><span class="text-slate-500 italic text-xs text-red-400">Cond false. Stops after 1st run.</span>';
+            }
+            dCond.classList.remove('evaluating');
+
+            btn.disabled = false;
+        }
+
+        /* =========================================
+           SECTION 3: CONTROL STATEMENTS
+           ========================================= */
+        function resetCtrlSim() {
+            document.getElementById('ctrl-console').innerHTML = '';
+            document.getElementById('ctrl-mem-i').innerText = '?';
+            document.querySelectorAll('#section-control .code-line').forEach(el => {
+                el.classList.remove('active', 'evaluating', 'jump');
+            });
+            
+            const action = document.getElementById('ctrl-action').value;
+            const stmt = document.getElementById('ctrl-stmt');
+            
+            if (action === 'none') {
+                stmt.className = 'code-line ml-8 text-slate-500 italic';
+                stmt.innerText = '// No jump statement';
+            } else if (action === 'break') {
+                stmt.className = 'code-line ml-8 text-rose-400 font-bold';
+                stmt.innerText = 'break;';
+            } else if (action === 'continue') {
+                stmt.className = 'code-line ml-8 text-amber-400 font-bold';
+                stmt.innerText = 'continue;';
+            } else if (action === 'goto') {
+                stmt.className = 'code-line ml-8 text-purple-400 font-bold';
+                stmt.innerText = 'goto end;';
+            }
+        }
+        resetCtrlSim();
+
+        async function runCtrlSim() {
+            resetCtrlSim();
+            const btn = document.getElementById('btn-ctrl-run');
+            btn.disabled = true;
+            btn.innerHTML = 'Executing...';
+
+            const action = document.getElementById('ctrl-action').value;
+            const cFor = document.getElementById('ctrl-for');
+            const cIf = document.getElementById('ctrl-if');
+            const cStmt = document.getElementById('ctrl-stmt');
+            const cPrint = document.getElementById('ctrl-print');
+            const cLabel = document.getElementById('ctrl-label');
+            const cEnd = document.getElementById('ctrl-end');
+            const memI = document.getElementById('ctrl-mem-i');
+            const con = document.getElementById('ctrl-console');
+
+            for (let i = 1; i <= 5; i++) {
+                memI.innerText = i;
+                
+                cFor.classList.add('evaluating');
+                await sleep(500);
+                cFor.classList.remove('evaluating');
+
+                cIf.classList.add('evaluating');
+                await sleep(500);
+                
+                if (i === 3) {
+                    cIf.classList.replace('evaluating', 'active');
+                    await sleep(400);
+                    cIf.classList.remove('active');
+
+                    if (action !== 'none') {
+                        cStmt.classList.add('jump');
+                        await sleep(800);
+                        cStmt.classList.remove('jump');
+
+                        if (action === 'break') {
+                            con.innerHTML += `<div class="animate-fade-in text-rose-400 italic">Loop Broken!</div>`;
+                            break;
+                        } 
+                        else if (action === 'continue') {
+                            con.innerHTML += `<div class="animate-fade-in text-amber-400 italic">Skipped print for i=3!</div>`;
+                            continue; // skip cPrint
+                        }
+                        else if (action === 'goto') {
+                            con.innerHTML += `<div class="animate-fade-in text-purple-400 italic">Jumped to end!</div>`;
+                            cLabel.classList.add('jump');
+                            await sleep(600);
+                            cLabel.classList.remove('jump');
+                            break; // exits loop physically
+                        }
+                    }
+                } else {
+                    cIf.classList.remove('evaluating');
+                }
+
+                // Normal execution
+                cPrint.classList.add('active');
+                con.innerHTML += `<div class="animate-fade-in">Value: ${i}</div>`;
+                await sleep(600);
+                cPrint.classList.remove('active');
+            }
+
+            // End block
+            cEnd.classList.add('active');
+            con.innerHTML += `<div class="animate-fade-in text-slate-400">Loop Finished</div>`;
+            await sleep(600);
+            cEnd.classList.remove('active');
+
+            btn.disabled = false;
+            btn.innerHTML = 'Execute Flow <i data-lucide="play" class="w-4 h-4"></i>';
+            lucide.createIcons();
+        }
+
+        /* =========================================
+           SECTION 4: NESTED PATTERN EXERCISE
+           ========================================= */
+        
+        function loadPreset() {
+            const val = document.getElementById('pat-presets').value;
+            if (val === 'custom') return; // Do nothing, let user edit
+            
+            // Standard resets
+            document.getElementById('pat-rows').value = "5";
+            document.getElementById('pat-char').value = "* ";
+            document.getElementById('pat-i-init').value = "1";
+            document.getElementById('pat-i-op').value = "<=";
+            document.getElementById('pat-i-target').value = "rows";
+            document.getElementById('pat-i-inc').value = "++";
+            document.getElementById('pat-j-init').value = "1";
+            document.getElementById('pat-j-op').value = "<=";
+            document.getElementById('pat-j-target').value = "i";
+            document.getElementById('pat-j-inc').value = "++";
+
+            // Preset Overrides
+            if (val === 'inverted_triangle') {
+                document.getElementById('pat-i-init').value = "rows";
+                document.getElementById('pat-i-op').value = ">=";
+                document.getElementById('pat-i-target').value = "1";
+                document.getElementById('pat-i-inc').value = "--";
+            } else if (val === 'square') {
+                document.getElementById('pat-j-target').value = "rows";
+            } else if (val === 'number_triangle') {
+                document.getElementById('pat-char').value = "j ";
+            } else if (val === 'row_numbers') {
+                document.getElementById('pat-char').value = "i ";
+            } else if (val === 'infinite') {
+                document.getElementById('pat-i-op').value = ">=";
+                document.getElementById('pat-i-target').value = "1";
+            }
+
+            // Sync Dropdown back to Custom so users can edit the preset
+            document.getElementById('pat-presets').value = "custom";
+            
+            updatePatternCode(true); // false prevents triggering run automatically to let user see code first
+        }
+
+        function updatePatternCode(isManualEdit = false) {
+            // If user manually edits, ensure dropdown shows custom
+            if (isManualEdit) {
+                document.getElementById('pat-presets').value = "custom";
+            }
+
+            // Escape values for display safely
+            const escapeHtml = (unsafe) => {
+                return (unsafe||'').toString()
+                     .replace(/&/g, "&amp;")
+                     .replace(/</g, "&lt;")
+                     .replace(/>/g, "&gt;")
+                     .replace(/"/g, "&quot;")
+                     .replace(/'/g, "&#039;");
+            }
+
+            document.getElementById('disp-rows').innerText = escapeHtml(document.getElementById('pat-rows').value);
+            document.getElementById('disp-char').innerText = escapeHtml(document.getElementById('pat-char').value);
+            
+            document.getElementById('disp-i-init').innerText = escapeHtml(document.getElementById('pat-i-init').value);
+            document.getElementById('disp-i-op').innerText = escapeHtml(document.getElementById('pat-i-op').value); 
+            document.getElementById('disp-i-target').innerText = escapeHtml(document.getElementById('pat-i-target').value);
+            document.getElementById('disp-i-inc').innerText = escapeHtml(document.getElementById('pat-i-inc').options[document.getElementById('pat-i-inc').selectedIndex].text);
+            
+            document.getElementById('disp-j-init').innerText = escapeHtml(document.getElementById('pat-j-init').value);
+            document.getElementById('disp-j-op').innerText = escapeHtml(document.getElementById('pat-j-op').value);
+            document.getElementById('disp-j-target').innerText = escapeHtml(document.getElementById('pat-j-target').value);
+            document.getElementById('disp-j-inc').innerText = escapeHtml(document.getElementById('pat-j-inc').options[document.getElementById('pat-j-inc').selectedIndex].text);
+        }
+        
+        // Init UI on load
+        updatePatternCode();
+
+        function resetPatternSim() {
+            document.getElementById('pattern-canvas').innerHTML = '';
+            document.getElementById('pat-val-i').innerText = '?';
+            document.getElementById('pat-val-j').innerText = '?';
+            document.querySelectorAll('#section-exercises .code-line').forEach(el => {
+                el.classList.remove('active', 'evaluating');
+            });
+        }
+
+        function parseTarget(valStr, iVal, rowsVal) {
+            valStr = valStr.trim();
+            if (valStr === 'i') return iVal;
+            if (valStr === 'rows') return rowsVal;
+            return parseInt(valStr) || 0;
+        }
+
+        function evaluateCond(val, op, target) {
+            if (op === '<=') return val <= target;
+            if (op === '<') return val < target;
+            if (op === '>=') return val >= target;
+            if (op === '>') return val > target;
+            return false;
+        }
+
+        function doIncrement(val, inc) {
+            return inc === '++' ? val + 1 : val - 1;
+        }
+
+        async function runPatternSim() {
+            resetPatternSim();
+            const btn = document.getElementById('btn-pat-run');
+            btn.disabled = true;
+            btn.innerHTML = 'Drawing...';
+
+            const pOut = document.getElementById('pat-outer');
+            const pIn = document.getElementById('pat-inner');
+            const pPrnt = document.getElementById('pat-print');
+            const pNL = document.getElementById('pat-newline');
+            
+            const vI = document.getElementById('pat-val-i');
+            const vJ = document.getElementById('pat-val-j');
+            const canvas = document.getElementById('pattern-canvas');
+
+            // Collect User Inputs
+            const rows = parseInt(document.getElementById('pat-rows').value) || 5;
+            
+            let iInitStr = document.getElementById('pat-i-init').value;
+            let iInit = parseTarget(iInitStr, 0, rows); // Allow starting at 'rows'
+            
+            const iOp = document.getElementById('pat-i-op').value;
+            const iTargetStr = document.getElementById('pat-i-target').value;
+            const iInc = document.getElementById('pat-i-inc').value;
+
+            let jInitStr = document.getElementById('pat-j-init').value;
+            
+            const jOp = document.getElementById('pat-j-op').value;
+            const jTargetStr = document.getElementById('pat-j-target').value;
+            const jInc = document.getElementById('pat-j-inc').value;
+            
+            let printChar = document.getElementById('pat-char').value || '*';
+            const safeChar = printChar.replace(/</g, "&lt;").replace(/>/g, "&gt;"); // XSS safety
+
+            let i = iInit;
+            let outerCount = 0;
+            const MAX_ITERATIONS = 15; // Safeguard against infinite loops
+
+            while (evaluateCond(i, iOp, parseTarget(iTargetStr, i, rows)) && outerCount < MAX_ITERATIONS) {
+                vI.innerText = i;
+                
+                pOut.classList.add('evaluating');
+                await sleep(150);
+                pOut.classList.replace('evaluating', 'active');
+                await sleep(100);
+                pOut.classList.remove('active');
+
+                let rowHtml = `<div id="row-${outerCount}" class="h-8 leading-8 whitespace-pre flex justify-center"></div>`;
+                canvas.innerHTML += rowHtml;
+                const currentRow = document.getElementById(`row-${outerCount}`);
+
+                let j = parseTarget(jInitStr, i, rows);
+                let innerCount = 0;
+                
+                while (evaluateCond(j, jOp, parseTarget(jTargetStr, i, rows)) && innerCount < MAX_ITERATIONS) {
+                    vJ.innerText = j;
+                    
+                    pIn.classList.add('evaluating');
+                    await sleep(100);
+                    pIn.classList.replace('evaluating', 'active');
+                    await sleep(50);
+                    pIn.classList.remove('active');
+
+                    // Determine what to print (handles dynamic i and j logic)
+                    let displayStr = safeChar;
+                    if (printChar === 'j ' || printChar === 'j') displayStr = printChar.replace('j', j);
+                    if (printChar === 'i ' || printChar === 'i') displayStr = printChar.replace('i', i);
+
+                    pPrnt.classList.add('active');
+                    currentRow.innerHTML += `<span class="star-cell text-amber-500" style="animation-duration: 0.15s">${displayStr}</span>`;
+                    await sleep(100);
+                    pPrnt.classList.remove('active');
+                    
+                    j = doIncrement(j, jInc);
+                    innerCount++;
+                }
+                
+                if (innerCount >= MAX_ITERATIONS) {
+                    currentRow.innerHTML += `<span class="text-red-500 text-xs ml-2 font-sans">[Inf Loop Break]</span>`;
+                }
+                
+                vJ.innerText = 'Exit';
+                pNL.classList.add('active');
+                await sleep(150);
+                pNL.classList.remove('active');
+                
+                i = doIncrement(i, iInc);
+                outerCount++;
+            }
+
+            if (outerCount >= MAX_ITERATIONS) {
+                canvas.innerHTML += `
+                    <div class="w-full flex justify-center mt-4">
+                        <div class="text-red-600 text-sm font-sans border-2 border-red-500 bg-red-100 p-3 rounded-lg font-bold flex items-center gap-2 shadow-lg animate-pulse w-max">
+                            <i data-lucide="siren" class="w-6 h-6"></i> 
+                            INFINITE LOOP DETECTED! Auto-terminated to prevent browser crash.
+                        </div>
+                    </div>`;
+            }
+
+            vI.innerText = 'Done';
+            vJ.innerText = 'Done';
+            btn.disabled = false;
+            btn.innerHTML = 'Draw Pattern <i data-lucide="paintbrush-2" class="w-3 h-3"></i>';
+            lucide.createIcons();
+        }
+
+    </script>
+</body>
+</html>

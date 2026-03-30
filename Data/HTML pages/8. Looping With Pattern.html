@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Pattern Pavilion: C Programming</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            scroll-behavior: smooth;
+        }
+        
+        .code-font { font-family: 'Fira Code', monospace; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        
+        /* Highlight active logic branch */
+        .code-line { transition: all 0.3s; opacity: 0.6; border-left: 4px solid transparent; padding-left: 8px;}
+        .code-line.active { opacity: 1; border-left-color: #3b82f6; background-color: rgba(59, 130, 246, 0.15); transform: translateX(4px); font-weight: bold;}
+        .code-line.evaluating { opacity: 1; border-left-color: #f59e0b; background-color: rgba(245, 158, 11, 0.15); transform: translateX(2px); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Pattern Cell Styles */
+        .pat-cell { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center;
+            width: 28px; 
+            height: 28px; 
+            animation: popIn 0.2s ease-out forwards; 
+            font-family: 'Fira Code', monospace;
+            font-weight: bold;
+            margin: 1px;
+            border-radius: 4px;
+        }
+        
+        .cell-star { background-color: #fbbf24; color: #78350f; box-shadow: 0 2px 4px rgba(251,191,36,0.3); }
+        .cell-space { background-color: #e2e8f0; color: #94a3b8; border: 1px dashed #cbd5e1; }
+        .cell-num { background-color: #38bdf8; color: #064e3b; box-shadow: 0 2px 4px rgba(56,189,248,0.3); }
+        .cell-char { background-color: #c084fc; color: #3b0764; box-shadow: 0 2px 4px rgba(192,132,252,0.3); }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white p-4 shadow-md sticky top-0 z-50 border-b-4 border-amber-500">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i data-lucide="grid-3x3" class="text-amber-400 w-8 h-8"></i>
+                <div>
+                    <h1 class="text-xl font-bold">The Pattern Pavilion</h1>
+                    <p class="text-xs text-slate-400">C Programming: Spaces, Matrices, and Custom Geometry</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex gap-6 text-sm font-medium text-slate-300">
+                <a href="#section-nospace" class="hover:text-white transition-colors">1. Without Space</a>
+                <a href="#section-withspace" class="hover:text-white transition-colors">2. With Space</a>
+                <a href="#section-custom" class="hover:text-white transition-colors">3. Custom Data</a>
+                <a href="#section-builder" class="hover:text-white transition-colors font-bold text-amber-300">Pattern Builder</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-1 w-full max-w-6xl mx-auto p-6 md:p-10 space-y-24 pb-32">
+        
+        <!-- ==========================================
+             SECTION 1: Without Space Pattern
+             ========================================== -->
+        <section id="section-nospace" class="scroll-mt-24">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-4 flex items-center gap-3"><i data-lucide="align-left" class="text-blue-500 w-8 h-8"></i> 1. "Without Space" Patterns</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg">
+                    <p>A "Without Space" pattern is simply a left-aligned shape. Because the C console naturally prints from left to right, you only need <b>two nested loops</b> to create these. The outer loop manages the <code class="bg-slate-200 px-1 rounded text-blue-600 font-bold">rows (i)</code>, and the inner loop manages the <code class="bg-slate-200 px-1 rounded text-emerald-600 font-bold">columns/characters (j)</code>.</p>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-8 items-stretch">
+                <!-- Code -->
+                <div class="bg-[#1e1e1e] rounded-xl shadow-xl border border-slate-700 flex flex-col overflow-hidden">
+                    <div class="bg-[#2d2d2d] px-4 py-3 border-b border-black flex justify-between items-center text-white">
+                        <span class="font-bold flex items-center gap-2 text-sm"><i data-lucide="terminal" class="w-4 h-4 text-emerald-400"></i> left_triangle.c</span>
+                        <button onclick="runNoSpaceSim()" id="btn-nospace" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1">Execute <i data-lucide="play" class="w-3 h-3"></i></button>
+                    </div>
+                    
+                    <div class="p-6 code-font text-sm leading-loose text-slate-300 flex-1">
+                        <div><span class="text-blue-400 font-bold">int</span> rows = <span class="text-orange-300">4</span>;</div>
+                        <br>
+                        <div id="ns-outer" class="code-line"><span class="text-blue-400 font-bold">for</span> (<span class="text-blue-400 font-bold">int</span> i = 1; i &lt;= rows; i++) {</div>
+                        
+                        <div id="ns-inner" class="code-line ml-4"><span class="text-blue-400 font-bold">for</span> (<span class="text-emerald-400 font-bold">int</span> j = 1; j &lt;= i; j++) {</div>
+                        <div id="ns-print" class="code-line ml-10 text-amber-400">printf("*");</div>
+                        <div class="ml-4">}</div>
+                        
+                        <div id="ns-nl" class="code-line ml-4 text-green-300">printf("\n"); <span class="text-slate-500 italic">// Move to next line</span></div>
+                        <div>}</div>
+                    </div>
+                </div>
+
+                <!-- Visualizer -->
+                <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6 flex flex-col items-center">
+                    <div class="w-full flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
+                        <div class="text-sm font-bold text-slate-500 uppercase tracking-widest">Logic Breakdown</div>
+                        <div class="flex gap-3 text-xs font-mono">
+                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">Row (i) = <span id="ns-val-i">?</span></span>
+                            <span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded">Col (j) = <span id="ns-val-j">?</span></span>
+                        </div>
+                    </div>
+                    
+                    <div id="ns-canvas" class="flex-1 flex flex-col justify-center items-start min-h-[200px] w-full max-w-[200px] mx-auto">
+                        <!-- Output generated here -->
+                        <div class="text-slate-400 italic text-sm w-full text-center">Click Execute to watch the loops run.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <hr class="border-slate-200">
+
+        <!-- ==========================================
+             SECTION 2: With Space Pattern
+             ========================================== -->
+        <section id="section-withspace" class="scroll-mt-24">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-4 flex items-center gap-3"><i data-lucide="align-right" class="text-amber-500 w-8 h-8"></i> 2. "With Space" Patterns</h2>
+                <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg text-sm text-amber-900 shadow-sm mt-4">
+                    <strong class="font-bold flex items-center gap-2 mb-2"><i data-lucide="lightbulb" class="w-4 h-4"></i> The Third Loop Secret</strong>
+                    To align a shape to the right (or center a pyramid), you must physically print "empty" space characters before printing the stars. This requires a <b>third loop</b> <code class="bg-amber-200 px-1 rounded text-amber-800 font-bold">for(k)</code> nested inside the outer loop, executing <i>before</i> the character loop.
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-12 gap-8 items-stretch">
+                <!-- Math Breakdown -->
+                <div class="lg:col-span-4 bg-white border border-slate-200 rounded-xl shadow-sm p-6 flex flex-col">
+                    <h3 class="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">The Math (Rows = 4)</h3>
+                    <div class="flex-1 flex flex-col justify-center gap-4 text-sm font-mono">
+                        <div class="flex justify-between items-center p-2 rounded bg-slate-50 border border-slate-200">
+                            <span class="text-blue-600 font-bold">Row i=1</span>
+                            <span class="text-amber-600 font-bold">Spaces = 3</span>
+                            <span class="text-emerald-600 font-bold">Stars = 1</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 rounded bg-slate-50 border border-slate-200">
+                            <span class="text-blue-600 font-bold">Row i=2</span>
+                            <span class="text-amber-600 font-bold">Spaces = 2</span>
+                            <span class="text-emerald-600 font-bold">Stars = 2</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 rounded bg-slate-50 border border-slate-200">
+                            <span class="text-blue-600 font-bold">Row i=3</span>
+                            <span class="text-amber-600 font-bold">Spaces = 1</span>
+                            <span class="text-emerald-600 font-bold">Stars = 3</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 rounded bg-slate-50 border border-slate-200">
+                            <span class="text-blue-600 font-bold">Row i=4</span>
+                            <span class="text-amber-600 font-bold">Spaces = 0</span>
+                            <span class="text-emerald-600 font-bold">Stars = 4</span>
+                        </div>
+                        <div class="mt-4 p-3 bg-amber-100/50 rounded-lg text-amber-800 text-center font-bold border border-amber-200">
+                            Formula: Spaces = (rows - i)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Code & Visualizer side-by-side -->
+                <div class="lg:col-span-8 bg-[#1e1e1e] rounded-xl shadow-xl border border-slate-700 flex flex-col md:flex-row overflow-hidden">
+                    
+                    <div class="flex-1 p-6 code-font text-sm leading-loose text-slate-300 border-b md:border-b-0 md:border-r border-slate-700">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-slate-400 italic">// right_triangle.c</span>
+                            <button onclick="runWithSpaceSim()" id="btn-withspace" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1">Execute <i data-lucide="play" class="w-3 h-3"></i></button>
+                        </div>
+                        
+                        <div id="ws-outer" class="code-line -ml-2 pl-2"><span class="text-blue-400 font-bold">for</span> (<span class="text-blue-400 font-bold">int</span> i = 1; i &lt;= rows; i++) {</div>
+                        
+                        <div class="ml-4 mt-2 text-slate-500 italic leading-tight">// Print Spaces first</div>
+                        <div id="ws-space-loop" class="code-line ml-4"><span class="text-amber-400 font-bold">for</span> (<span class="text-amber-400 font-bold">int</span> k = 1; k &lt;= <span class="text-white">(rows-i)</span>; k++) {</div>
+                        <div id="ws-space-print" class="code-line ml-10 text-slate-400">printf(" ");</div>
+                        <div class="ml-4">}</div>
+
+                        <div class="ml-4 mt-2 text-slate-500 italic leading-tight">// Print Stars second</div>
+                        <div id="ws-star-loop" class="code-line ml-4"><span class="text-emerald-400 font-bold">for</span> (<span class="text-emerald-400 font-bold">int</span> j = 1; j &lt;= i; j++) {</div>
+                        <div id="ws-star-print" class="code-line ml-10 text-amber-400">printf("*");</div>
+                        <div class="ml-4">}</div>
+                        
+                        <div id="ws-nl" class="code-line ml-4 text-green-300 mt-2">printf("\n");</div>
+                        <div>}</div>
+                    </div>
+                    
+                    <div class="w-full md:w-64 bg-slate-900 p-6 flex flex-col items-center justify-center relative">
+                        <div class="absolute top-2 left-2 flex gap-2 text-[10px] font-mono">
+                            <span class="text-blue-400">i=<span id="ws-val-i">?</span></span>
+                            <span class="text-amber-400">k=<span id="ws-val-k">?</span></span>
+                            <span class="text-emerald-400">j=<span id="ws-val-j">?</span></span>
+                        </div>
+                        <div id="ws-canvas" class="flex flex-col items-start gap-1">
+                            <!-- Visualizer output here -->
+                            <div class="text-slate-600 text-xs text-center w-full mt-10">Console Output<br>(Spaces will be highlighted)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <hr class="border-slate-200">
+
+        <!-- ==========================================
+             SECTION 3: Custom Patterns
+             ========================================== -->
+        <section id="section-custom" class="scroll-mt-24">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-4 flex items-center gap-3"><i data-lucide="shapes" class="text-purple-500 w-8 h-8"></i> 3. Custom Patterns (Numbers & Characters)</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg">
+                    <p>Instead of hardcoding a star <code class="bg-slate-200 px-1 rounded">"*"</code>, you can print the loop variables themselves. Printing the outer variable <code class="bg-slate-200 px-1 rounded font-bold text-blue-600">i</code> gives you identical rows. Printing the inner variable <code class="bg-slate-200 px-1 rounded font-bold text-emerald-600">j</code> gives you sequences. You can also cast them to <code class="bg-slate-200 px-1 rounded">char</code> to print alphabets!</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Example 1: Print i -->
+                <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-2 mb-3 border-b border-slate-100 pb-2">
+                        <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                        <h4 class="font-bold text-slate-700 text-sm">Print Outer (i)</h4>
+                    </div>
+                    <div class="code-font text-xs text-slate-500 mb-4 bg-slate-50 p-2 rounded">
+                        for(int i=1; i<=4; i++)<br>
+                        &nbsp;&nbsp;for(int j=1; j<=i; j++)<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-blue-600 font-bold">printf("%d", i);</span>
+                    </div>
+                    <div class="flex flex-col items-start gap-1 pl-4 border-l-2 border-slate-200">
+                        <div class="flex"><span class="pat-cell cell-num">1</span></div>
+                        <div class="flex"><span class="pat-cell cell-num">2</span><span class="pat-cell cell-num">2</span></div>
+                        <div class="flex"><span class="pat-cell cell-num">3</span><span class="pat-cell cell-num">3</span><span class="pat-cell cell-num">3</span></div>
+                        <div class="flex"><span class="pat-cell cell-num">4</span><span class="pat-cell cell-num">4</span><span class="pat-cell cell-num">4</span><span class="pat-cell cell-num">4</span></div>
+                    </div>
+                </div>
+
+                <!-- Example 2: Print j -->
+                <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-2 mb-3 border-b border-slate-100 pb-2">
+                        <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                        <h4 class="font-bold text-slate-700 text-sm">Print Inner (j)</h4>
+                    </div>
+                    <div class="code-font text-xs text-slate-500 mb-4 bg-slate-50 p-2 rounded">
+                        for(int i=1; i<=4; i++)<br>
+                        &nbsp;&nbsp;for(int j=1; j<=i; j++)<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-emerald-600 font-bold">printf("%d", j);</span>
+                    </div>
+                    <div class="flex flex-col items-start gap-1 pl-4 border-l-2 border-slate-200">
+                        <div class="flex"><span class="pat-cell cell-num bg-emerald-100 text-emerald-800">1</span></div>
+                        <div class="flex"><span class="pat-cell cell-num bg-emerald-100 text-emerald-800">1</span><span class="pat-cell cell-num bg-emerald-100 text-emerald-800">2</span></div>
+                        <div class="flex"><span class="pat-cell cell-num bg-emerald-100 text-emerald-800">1</span><span class="pat-cell cell-num bg-emerald-100 text-emerald-800">2</span><span class="pat-cell cell-num bg-emerald-100 text-emerald-800">3</span></div>
+                        <div class="flex"><span class="pat-cell cell-num bg-emerald-100 text-emerald-800">1</span><span class="pat-cell cell-num bg-emerald-100 text-emerald-800">2</span><span class="pat-cell cell-num bg-emerald-100 text-emerald-800">3</span><span class="pat-cell cell-num bg-emerald-100 text-emerald-800">4</span></div>
+                    </div>
+                </div>
+
+                <!-- Example 3: Print Alphabets -->
+                <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-2 mb-3 border-b border-slate-100 pb-2">
+                        <div class="w-3 h-3 rounded-full bg-purple-500"></div>
+                        <h4 class="font-bold text-slate-700 text-sm">Characters (ASCII)</h4>
+                    </div>
+                    <div class="code-font text-xs text-slate-500 mb-4 bg-slate-50 p-2 rounded">
+                        for(int i=1; i<=4; i++)<br>
+                        &nbsp;&nbsp;for(int j=1; j<=i; j++)<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-purple-600 font-bold">printf("%c", 64+i);</span>
+                    </div>
+                    <div class="flex flex-col items-start gap-1 pl-4 border-l-2 border-slate-200">
+                        <div class="flex"><span class="pat-cell cell-char">A</span></div>
+                        <div class="flex"><span class="pat-cell cell-char">B</span><span class="pat-cell cell-char">B</span></div>
+                        <div class="flex"><span class="pat-cell cell-char">C</span><span class="pat-cell cell-char">C</span><span class="pat-cell cell-char">C</span></div>
+                        <div class="flex"><span class="pat-cell cell-char">D</span><span class="pat-cell cell-char">D</span><span class="pat-cell cell-char">D</span><span class="pat-cell cell-char">D</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <hr class="border-slate-200">
+
+        <!-- ==========================================
+             SECTION 4: Interactive Pattern Builder
+             ========================================== -->
+        <section id="section-builder" class="scroll-mt-24">
+            <div class="mb-8">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-sm mb-3">
+                    <i data-lucide="settings-2" class="w-4 h-4"></i> Interactive Playground
+                </div>
+                <h2 class="text-3xl font-bold mb-4">4. The Custom Pattern Builder</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg">
+                    <p>Select a preset topology, and then customize what gets printed. The visualizer will trace the matrix execution and show exactly how the loops construct the final shape.</p>
+                </div>
+            </div>
+
+            <!-- Configuration Panel -->
+            <div class="bg-slate-100 border border-slate-300 rounded-xl p-5 mb-6 shadow-inner">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    <div class="space-y-2">
+                        <label class="font-bold text-slate-700 text-sm block">Topology Structure</label>
+                        <select id="pb-structure" onchange="updateBuilderCode()" class="w-full bg-white border border-slate-300 text-slate-800 rounded-lg px-3 py-2 outline-none focus:border-emerald-500 shadow-sm text-sm font-medium">
+                            <option value="left_tri">Left-Aligned Triangle (No Space)</option>
+                            <option value="right_tri">Right-Aligned Triangle (With Space)</option>
+                            <option value="pyramid">Full Pyramid (With Space)</option>
+                            <option value="square">Square Matrix (No Space)</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="font-bold text-slate-700 text-sm block">What to Print?</label>
+                        <select id="pb-print" onchange="updateBuilderCode()" class="w-full bg-white border border-slate-300 text-slate-800 rounded-lg px-3 py-2 outline-none focus:border-emerald-500 shadow-sm text-sm font-medium">
+                            <option value="star">Stars (*)</option>
+                            <option value="i">Row Numbers (i)</option>
+                            <option value="j">Column Numbers (j)</option>
+                            <option value="char_i">Alphabets by Row (A, BB, CCC)</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="font-bold text-slate-700 text-sm block">Number of Rows (N)</label>
+                        <input type="number" id="pb-rows" value="4" min="2" max="6" onchange="updateBuilderCode()" class="w-full bg-white border border-slate-300 text-slate-800 rounded-lg px-3 py-2 outline-none focus:border-emerald-500 shadow-sm text-sm font-medium text-center">
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Editor & Visualizer -->
+            <div class="bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden grid lg:grid-cols-2">
+                
+                <!-- Code Area -->
+                <div class="p-6 md:p-8 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-700 relative">
+                    <div class="absolute top-4 right-4 flex gap-2">
+                        <button onclick="runBuilderSim()" id="btn-builder-run" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold shadow-[0_3px_0_#059669] active:shadow-[0_0px_0_#059669] active:translate-y-[3px] transition-all flex items-center gap-2 text-sm z-10">
+                            Build It <i data-lucide="hammer" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    
+                    <h3 class="text-white font-bold mb-6 flex items-center gap-2"><i data-lucide="code-2" class="w-5 h-5 text-emerald-400"></i> Generated C Code</h3>
+                    
+                    <div class="code-font text-sm leading-loose text-slate-300 flex-1 overflow-x-auto" id="pb-code-container">
+                        <!-- Code injected dynamically here -->
+                    </div>
+                </div>
+
+                <!-- Visual Output -->
+                <div class="bg-black p-6 md:p-8 relative flex flex-col items-center justify-center min-h-[350px]">
+                    <div class="absolute top-4 left-4 flex gap-4 text-xs font-mono font-bold">
+                        <div class="text-blue-400 border border-blue-900 bg-blue-950/30 px-2 py-1 rounded">i = <span id="pb-val-i">0</span></div>
+                        <div id="pb-badge-k" class="text-amber-400 border border-amber-900 bg-amber-950/30 px-2 py-1 rounded hidden">k = <span id="pb-val-k">0</span></div>
+                        <div class="text-emerald-400 border border-emerald-900 bg-emerald-950/30 px-2 py-1 rounded">j = <span id="pb-val-j">0</span></div>
+                    </div>
+                    
+                    <div id="pb-canvas" class="flex flex-col items-center gap-1 mt-8 w-full">
+                        <div class="text-slate-600 font-mono text-sm">Select options and click 'Build It'</div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        /* =========================================
+           SECTION 1: NO SPACE SIMULATION
+           ========================================= */
+        function resetNoSpace() {
+            document.getElementById('ns-canvas').innerHTML = '';
+            document.getElementById('ns-val-i').innerText = '?';
+            document.getElementById('ns-val-j').innerText = '?';
+            document.querySelectorAll('#section-nospace .code-line').forEach(el => el.classList.remove('active', 'evaluating'));
+        }
+
+        async function runNoSpaceSim() {
+            resetNoSpace();
+            const btn = document.getElementById('btn-nospace');
+            btn.disabled = true;
+            btn.innerHTML = 'Running...';
+
+            const cOut = document.getElementById('ns-outer');
+            const cIn = document.getElementById('ns-inner');
+            const cPrnt = document.getElementById('ns-print');
+            const cNl = document.getElementById('ns-nl');
+            
+            const vI = document.getElementById('ns-val-i');
+            const vJ = document.getElementById('ns-val-j');
+            const canvas = document.getElementById('ns-canvas');
+
+            canvas.innerHTML = '';
+            const rows = 4;
+
+            for (let i = 1; i <= rows; i++) {
+                vI.innerText = i;
+                cOut.classList.add('active');
+                await sleep(300);
+                cOut.classList.remove('active');
+
+                let rowHtml = `<div id="ns-row-${i}" class="flex gap-1 mb-1"></div>`;
+                canvas.innerHTML += rowHtml;
+                const rDiv = document.getElementById(`ns-row-${i}`);
+
+                for (let j = 1; j <= i; j++) {
+                    vJ.innerText = j;
+                    cIn.classList.add('evaluating');
+                    await sleep(200);
+                    cIn.classList.remove('evaluating');
+
+                    cPrnt.classList.add('active');
+                    rDiv.innerHTML += `<span class="pat-cell cell-star">*</span>`;
+                    await sleep(200);
+                    cPrnt.classList.remove('active');
+                }
+                
+                vJ.innerText = '-';
+                cNl.classList.add('active');
+                await sleep(300);
+                cNl.classList.remove('active');
+            }
+
+            vI.innerText = 'Done';
+            btn.disabled = false;
+            btn.innerHTML = 'Execute <i data-lucide="play" class="w-3 h-3"></i>';
+            lucide.createIcons();
+        }
+
+        /* =========================================
+           SECTION 2: WITH SPACE SIMULATION
+           ========================================= */
+        function resetWithSpace() {
+            document.getElementById('ws-canvas').innerHTML = '';
+            document.getElementById('ws-val-i').innerText = '?';
+            document.getElementById('ws-val-k').innerText = '?';
+            document.getElementById('ws-val-j').innerText = '?';
+            document.querySelectorAll('#section-withspace .code-line').forEach(el => el.classList.remove('active', 'evaluating'));
+        }
+
+        async function runWithSpaceSim() {
+            resetWithSpace();
+            const btn = document.getElementById('btn-withspace');
+            btn.disabled = true;
+            btn.innerHTML = 'Running...';
+
+            const cOut = document.getElementById('ws-outer');
+            const cSpc = document.getElementById('ws-space-loop');
+            const cSpcP = document.getElementById('ws-space-print');
+            const cStar = document.getElementById('ws-star-loop');
+            const cStarP = document.getElementById('ws-star-print');
+            const cNl = document.getElementById('ws-nl');
+            
+            const vI = document.getElementById('ws-val-i');
+            const vK = document.getElementById('ws-val-k');
+            const vJ = document.getElementById('ws-val-j');
+            const canvas = document.getElementById('ws-canvas');
+
+            canvas.innerHTML = '';
+            const rows = 4;
+
+            for (let i = 1; i <= rows; i++) {
+                vI.innerText = i;
+                cOut.classList.add('active');
+                await sleep(300);
+                cOut.classList.remove('active');
+
+                let rowHtml = `<div id="ws-row-${i}" class="flex gap-1 mb-1"></div>`;
+                canvas.innerHTML += rowHtml;
+                const rDiv = document.getElementById(`ws-row-${i}`);
+
+                // Space Loop
+                for (let k = 1; k <= (rows - i); k++) {
+                    vK.innerText = k;
+                    cSpc.classList.add('evaluating');
+                    await sleep(150);
+                    cSpc.classList.remove('evaluating');
+
+                    cSpcP.classList.add('active');
+                    rDiv.innerHTML += `<span class="pat-cell cell-space">_</span>`;
+                    await sleep(150);
+                    cSpcP.classList.remove('active');
+                }
+                vK.innerText = '-';
+
+                // Star Loop
+                for (let j = 1; j <= i; j++) {
+                    vJ.innerText = j;
+                    cStar.classList.add('evaluating');
+                    await sleep(150);
+                    cStar.classList.remove('evaluating');
+
+                    cStarP.classList.add('active');
+                    rDiv.innerHTML += `<span class="pat-cell cell-star">*</span>`;
+                    await sleep(150);
+                    cStarP.classList.remove('active');
+                }
+                vJ.innerText = '-';
+                
+                cNl.classList.add('active');
+                await sleep(200);
+                cNl.classList.remove('active');
+            }
+
+            vI.innerText = 'Done';
+            btn.disabled = false;
+            btn.innerHTML = 'Execute <i data-lucide="play" class="w-3 h-3"></i>';
+            lucide.createIcons();
+        }
+
+        /* =========================================
+           SECTION 4: BUILDER SIMULATION
+           ========================================= */
+        const builderTemplates = {
+            'left_tri': {
+                hasSpace: false,
+                code: (printVal, rows) => `
+<span class="text-blue-400 font-bold">int</span> rows = <span class="text-orange-300">${rows}</span>;
+<div id="pb-outer" class="code-line -ml-2 pl-2"><span class="text-blue-400 font-bold">for</span> (<span class="text-blue-400 font-bold">int</span> i = 1; i &lt;= rows; i++) {</div>
+<div id="pb-inner-j" class="code-line ml-4"><span class="text-emerald-400 font-bold">for</span> (<span class="text-emerald-400 font-bold">int</span> j = 1; j &lt;= i; j++) {</div>
+<div id="pb-print-j" class="code-line ml-10 text-amber-400">printf("${printVal}");</div>
+<div class="ml-4">}</div>
+<div id="pb-nl" class="code-line ml-4 text-green-300 mt-1">printf("\\n");</div>
+<div>}</div>`
+            },
+            'square': {
+                hasSpace: false,
+                code: (printVal, rows) => `
+<span class="text-blue-400 font-bold">int</span> rows = <span class="text-orange-300">${rows}</span>;
+<div id="pb-outer" class="code-line -ml-2 pl-2"><span class="text-blue-400 font-bold">for</span> (<span class="text-blue-400 font-bold">int</span> i = 1; i &lt;= rows; i++) {</div>
+<div id="pb-inner-j" class="code-line ml-4"><span class="text-emerald-400 font-bold">for</span> (<span class="text-emerald-400 font-bold">int</span> j = 1; j &lt;= rows; j++) {</div>
+<div id="pb-print-j" class="code-line ml-10 text-amber-400">printf("${printVal}");</div>
+<div class="ml-4">}</div>
+<div id="pb-nl" class="code-line ml-4 text-green-300 mt-1">printf("\\n");</div>
+<div>}</div>`
+            },
+            'right_tri': {
+                hasSpace: true,
+                code: (printVal, rows) => `
+<span class="text-blue-400 font-bold">int</span> rows = <span class="text-orange-300">${rows}</span>;
+<div id="pb-outer" class="code-line -ml-2 pl-2"><span class="text-blue-400 font-bold">for</span> (<span class="text-blue-400 font-bold">int</span> i = 1; i &lt;= rows; i++) {</div>
+<div id="pb-inner-k" class="code-line ml-4"><span class="text-amber-400 font-bold">for</span> (<span class="text-amber-400 font-bold">int</span> k = 1; k &lt;= (rows - i); k++) {</div>
+<div id="pb-print-k" class="code-line ml-10 text-slate-400">printf(" ");</div>
+<div class="ml-4">}</div>
+<div id="pb-inner-j" class="code-line ml-4 mt-1"><span class="text-emerald-400 font-bold">for</span> (<span class="text-emerald-400 font-bold">int</span> j = 1; j &lt;= i; j++) {</div>
+<div id="pb-print-j" class="code-line ml-10 text-amber-400">printf("${printVal}");</div>
+<div class="ml-4">}</div>
+<div id="pb-nl" class="code-line ml-4 text-green-300 mt-1">printf("\\n");</div>
+<div>}</div>`
+            },
+            'pyramid': {
+                hasSpace: true,
+                code: (printVal, rows) => `
+<span class="text-blue-400 font-bold">int</span> rows = <span class="text-orange-300">${rows}</span>;
+<div id="pb-outer" class="code-line -ml-2 pl-2"><span class="text-blue-400 font-bold">for</span> (<span class="text-blue-400 font-bold">int</span> i = 1; i &lt;= rows; i++) {</div>
+<div id="pb-inner-k" class="code-line ml-4"><span class="text-amber-400 font-bold">for</span> (<span class="text-amber-400 font-bold">int</span> k = 1; k &lt;= (rows - i); k++) {</div>
+<div id="pb-print-k" class="code-line ml-10 text-slate-400">printf(" ");</div>
+<div class="ml-4">}</div>
+<div class="ml-4 text-slate-500 italic mt-1">// Print 2*i - 1 elements</div>
+<div id="pb-inner-j" class="code-line ml-4"><span class="text-emerald-400 font-bold">for</span> (<span class="text-emerald-400 font-bold">int</span> j = 1; j &lt;= (2*i - 1); j++) {</div>
+<div id="pb-print-j" class="code-line ml-10 text-amber-400">printf("${printVal}");</div>
+<div class="ml-4">}</div>
+<div id="pb-nl" class="code-line ml-4 text-green-300 mt-1">printf("\\n");</div>
+<div>}</div>`
+            }
+        };
+
+        function getPrintCode(type) {
+            if (type === 'star') return "*";
+            if (type === 'i') return "%d\", i";
+            if (type === 'j') return "%d\", j";
+            if (type === 'char_i') return "%c\", 64+i";
+            return "*";
+        }
+
+        function updateBuilderCode() {
+            const struct = document.getElementById('pb-structure').value;
+            const printType = document.getElementById('pb-print').value;
+            const rows = document.getElementById('pb-rows').value;
+            
+            const printCode = getPrintCode(printType);
+            const template = builderTemplates[struct];
+            
+            document.getElementById('pb-code-container').innerHTML = template.code(printCode, rows);
+
+            // Show/Hide k badge
+            const badgeK = document.getElementById('pb-badge-k');
+            if (template.hasSpace) {
+                badgeK.classList.remove('hidden');
+                badgeK.classList.add('inline-block');
+            } else {
+                badgeK.classList.add('hidden');
+                badgeK.classList.remove('inline-block');
+            }
+
+            document.getElementById('pb-canvas').innerHTML = ''; // Clear canvas
+        }
+
+        // Init on load
+        updateBuilderCode();
+
+        async function runBuilderSim() {
+            const btn = document.getElementById('btn-builder-run');
+            btn.disabled = true;
+            btn.innerHTML = 'Building...';
+
+            const struct = document.getElementById('pb-structure').value;
+            const printType = document.getElementById('pb-print').value;
+            const rows = parseInt(document.getElementById('pb-rows').value) || 4;
+            const template = builderTemplates[struct];
+
+            const canvas = document.getElementById('pb-canvas');
+            canvas.innerHTML = '';
+            
+            const vI = document.getElementById('pb-val-i');
+            const vJ = document.getElementById('pb-val-j');
+            const vK = document.getElementById('pb-val-k');
+
+            const cOut = document.getElementById('pb-outer');
+            const cNl = document.getElementById('pb-nl');
+
+            for (let i = 1; i <= rows; i++) {
+                vI.innerText = i;
+                if(cOut){ cOut.classList.add('active'); await sleep(150); cOut.classList.remove('active'); }
+
+                let rowHtml = `<div id="pb-row-${i}" class="flex gap-1 mb-1 justify-center w-full"></div>`;
+                if(struct === 'left_tri' || struct === 'square') {
+                    rowHtml = `<div id="pb-row-${i}" class="flex gap-1 mb-1 w-full pl-4 justify-start"></div>`; // align left conceptually
+                }
+                canvas.innerHTML += rowHtml;
+                const rDiv = document.getElementById(`pb-row-${i}`);
+
+                // Handle Spaces K
+                if (template.hasSpace) {
+                    const cInK = document.getElementById('pb-inner-k');
+                    const cPrK = document.getElementById('pb-print-k');
+                    for (let k = 1; k <= (rows - i); k++) {
+                        vK.innerText = k;
+                        if(cInK){ cInK.classList.add('evaluating'); await sleep(50); cInK.classList.remove('evaluating'); }
+                        if(cPrK){ cPrK.classList.add('active'); }
+                        rDiv.innerHTML += `<span class="pat-cell cell-space bg-transparent border-none w-6"></span>`; // invisible spacer
+                        await sleep(50);
+                        if(cPrK){ cPrK.classList.remove('active'); }
+                    }
+                    vK.innerText = '-';
+                }
+
+                // Handle Prints J
+                const cInJ = document.getElementById('pb-inner-j');
+                const cPrJ = document.getElementById('pb-print-j');
+                
+                let jMax = i;
+                if (struct === 'square') jMax = rows;
+                if (struct === 'pyramid') jMax = (2 * i - 1);
+
+                for (let j = 1; j <= jMax; j++) {
+                    vJ.innerText = j;
+                    if(cInJ){ cInJ.classList.add('evaluating'); await sleep(50); cInJ.classList.remove('evaluating'); }
+
+                    let valStr = '*';
+                    let cssClass = 'cell-star';
+                    if (printType === 'i') { valStr = i; cssClass = 'cell-num'; }
+                    if (printType === 'j') { valStr = j; cssClass = 'cell-num'; }
+                    if (printType === 'char_i') { valStr = String.fromCharCode(64 + i); cssClass = 'cell-char'; }
+
+                    if(cPrJ){ cPrJ.classList.add('active'); }
+                    rDiv.innerHTML += `<span class="pat-cell ${cssClass} w-6 h-6 sm:w-8 sm:h-8">${valStr}</span>`;
+                    await sleep(100);
+                    if(cPrJ){ cPrJ.classList.remove('active'); }
+                }
+                vJ.innerText = '-';
+
+                if(cNl){ cNl.classList.add('active'); await sleep(150); cNl.classList.remove('active'); }
+            }
+
+            vI.innerText = 'Done';
+            btn.disabled = false;
+            btn.innerHTML = 'Build It <i data-lucide="hammer" class="w-4 h-4"></i>';
+            lucide.createIcons();
+        }
+
+    </script>
+</body>
+</html>

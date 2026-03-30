@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C Programming: Variables & I/O Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            scroll-behavior: smooth;
+        }
+        
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes flowData {
+            0% { transform: translateX(0) scale(1); opacity: 1; }
+            50% { transform: translateX(100px) scale(1.1); opacity: 0.5; }
+            100% { transform: translateX(200px) scale(1); opacity: 0; }
+        }
+
+        .animate-flow {
+            animation: flowData 1s ease-in-out forwards;
+        }
+        
+        @keyframes flowUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            50% { transform: translateY(-50px) scale(1.1); opacity: 0.5; }
+            100% { transform: translateY(-100px) scale(1); opacity: 0; }
+        }
+        
+        .animate-flow-up {
+            animation: flowUp 1s ease-in-out forwards;
+        }
+
+        /* Data Type Colors */
+        .type-int { border-color: #3b82f6; background-color: #eff6ff; color: #1d4ed8; }
+        .type-float { border-color: #8b5cf6; background-color: #f5f3ff; color: #6d28d9; }
+        .type-char { border-color: #10b981; background-color: #ecfdf5; color: #047857; }
+        .type-double { border-color: #f59e0b; background-color: #fffbeb; color: #b45309; }
+
+        /* Memory block styling */
+        .memory-byte {
+            width: 24px;
+            height: 32px;
+            border: 1px solid rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.5);
+            border-radius: 2px;
+        }
+        
+        /* Execution Highlight */
+        .code-line { transition: all 0.3s; border-left: 3px solid transparent; padding-left: 10px; }
+        .code-active { background-color: rgba(59, 130, 246, 0.15); border-left-color: #3b82f6; font-weight: bold; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white p-4 shadow-md sticky top-0 z-50 border-b-4 border-indigo-500">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i data-lucide="database" class="text-indigo-400 w-8 h-8"></i>
+                <div>
+                    <h1 class="text-xl font-bold">C Variables & I/O Visualizer</h1>
+                    <p class="text-xs text-slate-400">Master Data Types, Format Specifiers, Printf, and Scanf</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex gap-4 text-sm font-medium text-slate-300 overflow-x-auto whitespace-nowrap px-2">
+                <a href="#section-datatypes" class="hover:text-white transition-colors">Data Types</a>
+                <a href="#section-memory" class="hover:text-white transition-colors">Memory</a>
+                <a href="#section-printf" class="hover:text-white transition-colors">Printf</a>
+                <a href="#section-scanf" class="hover:text-white transition-colors">Scanf</a>
+                <a href="#section-combined" class="hover:text-white transition-colors text-indigo-300 font-bold">The Finale</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 w-full max-w-6xl mx-auto p-6 md:p-10 space-y-20 pb-32">
+        
+        <!-- ==========================================
+             SECTION 1: Data Types in C
+             ========================================== -->
+        <section id="section-datatypes" class="scroll-mt-24">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-4 flex items-center gap-3"><i data-lucide="layers" class="text-orange-500 w-8 h-8"></i> 1. Primary Data Types in C</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg">
+                    <p>C is a <b>statically typed</b> language. This means you must explicitly tell the compiler what kind of data a variable will hold before you use it. The Data Type determines two crucial things: <b>How much memory (bytes)</b> to allocate, and <b>how to interpret</b> that binary data.</p>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col md:flex-row">
+                <!-- Navigation Tabs -->
+                <div class="bg-slate-50 md:w-64 border-b md:border-b-0 md:border-r border-slate-200 p-4 flex flex-row md:flex-col gap-2 overflow-x-auto">
+                    <button onclick="showDataType('int')" id="tab-dt-int" class="dt-tab flex-shrink-0 text-left px-4 py-3 rounded-lg font-bold code-font bg-blue-100 text-blue-800 border-2 border-blue-400 transition-all">int</button>
+                    <button onclick="showDataType('float')" id="tab-dt-float" class="dt-tab flex-shrink-0 text-left px-4 py-3 rounded-lg font-bold code-font text-slate-600 hover:bg-slate-200 border-2 border-transparent transition-all">float</button>
+                    <button onclick="showDataType('char')" id="tab-dt-char" class="dt-tab flex-shrink-0 text-left px-4 py-3 rounded-lg font-bold code-font text-slate-600 hover:bg-slate-200 border-2 border-transparent transition-all">char</button>
+                    <button onclick="showDataType('double')" id="tab-dt-double" class="dt-tab flex-shrink-0 text-left px-4 py-3 rounded-lg font-bold code-font text-slate-600 hover:bg-slate-200 border-2 border-transparent transition-all">double</button>
+                </div>
+
+                <!-- Content Area -->
+                <div class="p-6 flex-1 min-h-[300px] relative">
+                    <!-- INT INFO -->
+                    <div id="dt-info-int" class="dt-info animate-fade-in">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <h3 class="text-2xl font-bold text-slate-800 code-font mb-1">int</h3>
+                                <p class="text-slate-500">Integer (Whole Numbers)</p>
+                            </div>
+                            <span class="bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full text-sm">4 Bytes (32 bits)</span>
+                        </div>
+                        <p class="text-slate-600 mb-6">Stores whole numbers without decimals. Can be positive or negative.</p>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="bg-slate-50 border border-slate-200 p-3 rounded-lg">
+                                <span class="block text-xs font-bold text-slate-400 uppercase mb-1">Format Specifier</span>
+                                <code class="text-blue-600 font-bold text-lg">%d</code> or <code class="text-blue-600 font-bold text-lg">%i</code>
+                            </div>
+                            <div class="bg-slate-50 border border-slate-200 p-3 rounded-lg">
+                                <span class="block text-xs font-bold text-slate-400 uppercase mb-1">Value Range</span>
+                                <code class="text-slate-700 text-sm">-2,147,483,648 to<br>2,147,483,647</code>
+                            </div>
+                        </div>
+                        <div class="bg-slate-800 rounded-lg p-4 code-font text-sm text-green-400 shadow-inner">
+                            <span class="text-blue-400">int</span> age = <span class="text-amber-400">25</span>;<br>
+                            <span class="text-blue-400">int</span> temperature = <span class="text-amber-400">-5</span>;
+                        </div>
+                    </div>
+
+                    <!-- FLOAT INFO -->
+                    <div id="dt-info-float" class="dt-info hidden animate-fade-in">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <h3 class="text-2xl font-bold text-slate-800 code-font mb-1">float</h3>
+                                <p class="text-slate-500">Floating Point (Decimals)</p>
+                            </div>
+                            <span class="bg-purple-100 text-purple-800 font-bold px-3 py-1 rounded-full text-sm">4 Bytes (32 bits)</span>
+                        </div>
+                        <p class="text-slate-600 mb-6">Stores numbers with fractional parts. Provides precision up to 6-7 decimal places.</p>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="bg-slate-50 border border-slate-200 p-3 rounded-lg">
+                                <span class="block text-xs font-bold text-slate-400 uppercase mb-1">Format Specifier</span>
+                                <code class="text-purple-600 font-bold text-lg">%f</code>
+                            </div>
+                            <div class="bg-slate-50 border border-slate-200 p-3 rounded-lg">
+                                <span class="block text-xs font-bold text-slate-400 uppercase mb-1">Precision</span>
+                                <code class="text-slate-700 text-sm">6 decimal places</code>
+                            </div>
+                        </div>
+                        <div class="bg-slate-800 rounded-lg p-4 code-font text-sm text-green-400 shadow-inner">
+                            <span class="text-blue-400">float</span> pi = <span class="text-amber-400">3.14159f</span>;<br>
+                            <span class="text-blue-400">float</span> weight = <span class="text-amber-400">65.5f</span>;
+                        </div>
+                    </div>
+
+                    <!-- CHAR INFO -->
+                    <div id="dt-info-char" class="dt-info hidden animate-fade-in">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <h3 class="text-2xl font-bold text-slate-800 code-font mb-1">char</h3>
+                                <p class="text-slate-500">Character</p>
+                            </div>
+                            <span class="bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full text-sm">1 Byte (8 bits)</span>
+                        </div>
+                        <p class="text-slate-600 mb-6">Stores a single character, letter, number, or ASCII symbol. Must be enclosed in single quotes.</p>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="bg-slate-50 border border-slate-200 p-3 rounded-lg">
+                                <span class="block text-xs font-bold text-slate-400 uppercase mb-1">Format Specifier</span>
+                                <code class="text-emerald-600 font-bold text-lg">%c</code>
+                            </div>
+                            <div class="bg-slate-50 border border-slate-200 p-3 rounded-lg">
+                                <span class="block text-xs font-bold text-slate-400 uppercase mb-1">Under The Hood</span>
+                                <code class="text-slate-700 text-sm">Stored as integer (ASCII)</code>
+                            </div>
+                        </div>
+                        <div class="bg-slate-800 rounded-lg p-4 code-font text-sm text-green-400 shadow-inner">
+                            <span class="text-blue-400">char</span> grade = <span class="text-amber-400">'A'</span>;<br>
+                            <span class="text-blue-400">char</span> symbol = <span class="text-amber-400">'#'</span>;
+                        </div>
+                    </div>
+
+                    <!-- DOUBLE INFO -->
+                    <div id="dt-info-double" class="dt-info hidden animate-fade-in">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <h3 class="text-2xl font-bold text-slate-800 code-font mb-1">double</h3>
+                                <p class="text-slate-500">Double Precision Float</p>
+                            </div>
+                            <span class="bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full text-sm">8 Bytes (64 bits)</span>
+                        </div>
+                        <p class="text-slate-600 mb-6">Stores numbers with fractional parts, offering exactly twice the precision (memory) of a float.</p>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="bg-slate-50 border border-slate-200 p-3 rounded-lg">
+                                <span class="block text-xs font-bold text-slate-400 uppercase mb-1">Format Specifier</span>
+                                <code class="text-amber-600 font-bold text-lg">%lf</code>
+                            </div>
+                            <div class="bg-slate-50 border border-slate-200 p-3 rounded-lg">
+                                <span class="block text-xs font-bold text-slate-400 uppercase mb-1">Precision</span>
+                                <code class="text-slate-700 text-sm">15 decimal places</code>
+                            </div>
+                        </div>
+                        <div class="bg-slate-800 rounded-lg p-4 code-font text-sm text-green-400 shadow-inner">
+                            <span class="text-blue-400">double</span> exactPi = <span class="text-amber-400">3.141592653589793</span>;
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <hr class="border-slate-200">
+
+        <!-- ==========================================
+             SECTION 2: Variables, Keywords, Constants & Memory 
+             ========================================== -->
+        <section id="section-memory" class="scroll-mt-24">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-4 flex items-center gap-3"><i data-lucide="cpu" class="text-blue-600 w-8 h-8"></i> 2. Memory, Variables & Constants</h2>
+                <div class="grid md:grid-cols-2 gap-8 text-slate-600 text-lg leading-relaxed">
+                    <div>
+                        <p class="mb-4">Now that you know the Data Types, you can declare <b>Variables</b> (named memory locations). The compiler uses the Data Type to know how many bytes to grab in RAM.</p>
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <h4 class="font-bold text-blue-900 mb-2 flex items-center gap-2"><i data-lucide="check-square" class="w-5 h-5 text-blue-600"></i> Rules for Naming C Variables</h4>
+                            <ul class="list-disc pl-5 text-sm text-blue-800 space-y-1">
+                                <li>Must start with a <b>letter</b> (A-Z, a-z) or an <b>underscore</b> (_).</li>
+                                <li>Can only contain letters, numbers (0-9), and underscores. No spaces!</li>
+                                <li>Cannot be a reserved C <b>keyword</b> (e.g., <code class="bg-blue-100 px-1 rounded">int</code>, <code class="bg-blue-100 px-1 rounded">return</code>).</li>
+                                <li>They are case-sensitive (<code class="bg-blue-100 px-1 rounded">age</code> and <code class="bg-blue-100 px-1 rounded">Age</code> are different).</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="mb-4"><b>Keywords</b> are reserved words in C that cannot be used as variable names. <b>Constants</b> are variables declared with the <code class="text-sm bg-slate-200 px-1 rounded">const</code> keyword; their values become locked and cannot be changed after initialization.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Memory Allocator Interactive -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-100 px-4 py-3 border-b border-slate-200 font-bold text-slate-700 flex items-center gap-2">
+                    <i data-lucide="layout-grid" class="w-5 h-5"></i> Memory Allocation Visualizer
+                </div>
+                <div class="p-6">
+                    <form id="var-form" class="flex flex-wrap items-start gap-4 mb-8 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <div class="w-full md:w-auto pt-5">
+                            <label class="flex items-center gap-2 cursor-pointer h-10 px-3 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+                                <input type="checkbox" id="var-const" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                                <span class="text-sm font-medium text-slate-700 code-font">const</span>
+                            </label>
+                        </div>
+                        <div class="flex-1 min-w-[120px]">
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Data Type</label>
+                            <select id="var-type" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-blue-500 code-font h-10">
+                                <option value="int">int (4 bytes)</option>
+                                <option value="float">float (4 bytes)</option>
+                                <option value="char">char (1 byte)</option>
+                                <option value="double">double (8 bytes)</option>
+                            </select>
+                        </div>
+                        <div class="flex-1 min-w-[200px] relative">
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Variable Name</label>
+                            <input type="text" id="var-name" placeholder="e.g. score" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-blue-500 code-font h-10">
+                            
+                            <!-- Real-time Naming Rules Validator -->
+                            <div class="absolute top-16 left-0 w-full bg-white border border-slate-200 shadow-lg rounded p-3 text-xs z-30 hidden" id="rule-popup">
+                                <div class="font-bold text-slate-600 mb-2 border-b pb-1">Naming Rule Checklist:</div>
+                                <div class="flex items-center gap-2 mb-1" id="rule-start"><i data-lucide="x-circle" class="w-4 h-4 text-red-500"></i> <span class="text-slate-600">Starts with letter or _</span></div>
+                                <div class="flex items-center gap-2 mb-1" id="rule-chars"><i data-lucide="x-circle" class="w-4 h-4 text-red-500"></i> <span class="text-slate-600">Only letters, numbers, or _</span></div>
+                                <div class="flex items-center gap-2" id="rule-keyword"><i data-lucide="check-circle-2" class="w-4 h-4 text-green-500"></i> <span class="text-slate-600">Not a reserved keyword</span></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center pt-7 font-bold text-slate-400">=</div>
+                        <div class="flex-1 min-w-[120px]">
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Value</label>
+                            <input type="text" id="var-value" placeholder="e.g. 100" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-blue-500 code-font h-10">
+                        </div>
+                        <div class="pt-5">
+                            <button type="submit" id="var-submit-btn" class="bg-slate-300 text-slate-500 cursor-not-allowed px-6 py-2 rounded-lg font-medium transition-colors h-10 flex items-center gap-2" disabled>
+                                <i data-lucide="plus" class="w-4 h-4"></i> Allocate
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Error Alert -->
+                    <div id="var-error" class="hidden mb-6 p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm flex items-center gap-2 animate-fade-in">
+                        <i data-lucide="alert-triangle" class="w-4 h-4"></i> <span id="var-error-msg"></span>
+                    </div>
+
+                    <h3 class="text-sm font-bold text-slate-500 uppercase mb-4 flex items-center gap-2"><i data-lucide="server" class="w-4 h-4"></i> System RAM (Simulated)</h3>
+                    <div id="memory-board" class="flex flex-wrap gap-4 min-h-[150px] p-6 bg-slate-800 rounded-xl shadow-inner relative overflow-hidden">
+                        <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px); background-size: 20px 20px;"></div>
+                        <!-- Memory blocks go here -->
+                        <div id="empty-ram" class="absolute inset-0 flex items-center justify-center text-slate-500 z-10 pointer-events-none">
+                            <p>RAM is currently empty. Define a valid variable above to allocate.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <hr class="border-slate-200">
+
+        <!-- ==========================================
+             SECTION 3: Format Specifiers & Printf 
+             ========================================== -->
+        <section id="section-printf" class="scroll-mt-24">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-4 flex items-center gap-3"><i data-lucide="monitor-play" class="text-emerald-500 w-8 h-8"></i> 3. Format Specifiers & Printf()</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg">
+                    <p>Unlike Python or JS, C's <code class="bg-slate-200 px-1 rounded">printf()</code> cannot automatically figure out what type of variable you are trying to print. You must use <b>Format Specifiers</b> as placeholders inside the string to tell C exactly how to format the raw memory data into text.</p>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-12 gap-6">
+                <!-- Cheat Sheet -->
+                <div class="lg:col-span-4 bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Specifier Cheat Sheet</h3>
+                    <ul class="space-y-3 text-sm">
+                        <li class="flex items-center justify-between"><code class="font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">%d</code> <span class="text-slate-600">Integer (decimal)</span></li>
+                        <li class="flex items-center justify-between"><code class="font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded">%f</code> <span class="text-slate-600">Float (decimal point)</span></li>
+                        <li class="flex items-center justify-between"><code class="font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded">%lf</code> <span class="text-slate-600">Double</span></li>
+                        <li class="flex items-center justify-between"><code class="font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">%c</code> <span class="text-slate-600">Character</span></li>
+                        <li class="flex items-center justify-between"><code class="font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded">%.2f</code> <span class="text-slate-600">Float (2 decimal places)</span></li>
+                    </ul>
+                </div>
+
+                <!-- Printf Visualizer -->
+                <div class="lg:col-span-8 bg-[#1e1e1e] rounded-xl shadow-xl overflow-hidden flex flex-col border border-slate-700">
+                    <div class="bg-[#2d2d2d] px-4 py-2 flex items-center gap-2 border-b border-black">
+                        <span class="text-slate-300 text-xs font-mono font-bold">printf_visualizer.c</span>
+                    </div>
+                    
+                    <div class="p-6 text-[#d4d4d4] code-font text-sm leading-relaxed flex-1">
+                        <!-- Predefined Variables -->
+                        <div class="mb-4 text-slate-400 border-b border-slate-700/50 pb-4">
+                            <span class="text-[#569cd6]">int</span> age = <span class="text-[#b5cea8]">25</span>;<br>
+                            <span class="text-[#569cd6]">float</span> height = <span class="text-[#b5cea8]">5.9</span>;<br>
+                            <span class="text-[#569cd6]">char</span> grade = <span class="text-[#ce9178]">'A'</span>;
+                        </div>
+
+                        <!-- Printf Statement -->
+                        <div class="flex flex-wrap items-center gap-1 mt-4 relative">
+                            <span class="text-[#dcdcaa]">printf</span>(<span class="text-[#ce9178]">"</span>
+                            
+                            <!-- Interactive String Input -->
+                            <input type="text" id="pf-string" value="Age: %d, Height: %.1f, Grade: %c" 
+                                class="bg-[#2d2d2d] text-[#ce9178] border border-slate-600 rounded px-2 outline-none focus:border-[#dcdcaa] min-w-[300px] transition-colors"
+                                oninput="parsePrintf()">
+                            
+                            <span class="text-[#ce9178]">"</span>, 
+                            <span class="text-[#9cdcfe]">age</span>, 
+                            <span class="text-[#9cdcfe]">height</span>, 
+                            <span class="text-[#9cdcfe]">grade</span>);
+                        </div>
+
+                        <!-- Mapping Visualizer Area -->
+                        <div id="pf-mapping" class="mt-8 pt-4 border-t border-dashed border-slate-700 flex flex-col gap-3">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Output Console -->
+                    <div class="bg-black border-t border-slate-700 p-4">
+                        <div class="text-xs font-bold text-slate-500 mb-2">OUTPUT TERMINAL</div>
+                        <div id="pf-output" class="text-green-400 code-font text-lg animate-fade-in">
+                            <!-- Output generated via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <hr class="border-slate-200">
+
+        <!-- ==========================================
+             SECTION 4: Scanf & Memory Addresses
+             ========================================== -->
+        <section id="section-scanf" class="scroll-mt-24">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-4 flex items-center gap-3"><i data-lucide="keyboard" class="text-purple-500 w-8 h-8"></i> 4. Scanf() & The Address-of Operator (&)</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg">
+                    <p>The <code class="bg-slate-200 px-1 rounded">scanf()</code> function takes input from the keyboard. But to store that input, it needs to know <i>exactly where</i> in the computer's memory the variable lives. We use the <b>Address-of Operator (<code class="font-bold text-purple-600">&</code>)</b> to give <code class="bg-slate-200 px-1 rounded">scanf</code> the physical memory address, not the value.</p>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl p-8 shadow-sm">
+                
+                <div class="flex flex-col md:flex-row items-center justify-between gap-12">
+                    
+                    <!-- Code & Terminal Side -->
+                    <div class="flex-1 w-full space-y-6">
+                        <div class="bg-[#1e1e1e] rounded-lg p-5 text-sm code-font border border-slate-700 shadow-lg relative overflow-hidden">
+                            <div class="text-slate-400 mb-3">
+                                <span class="text-[#569cd6]">int</span> <span class="text-[#9cdcfe]">userAge</span>; <span class="text-[#6a9955]">// Currently holds garbage value</span><br>
+                                <span class="text-[#dcdcaa]">printf</span>(<span class="text-[#ce9178]">"Enter your age: "</span>);
+                            </div>
+                            <div class="bg-blue-900/30 border border-blue-500/50 rounded p-2 text-white">
+                                <span class="text-[#dcdcaa]">scanf</span>(<span class="text-[#ce9178]">"%d"</span>, <span class="text-purple-400 font-bold text-lg animate-pulse">&amp;</span><span class="text-[#9cdcfe]">userAge</span>);
+                            </div>
+                            <p class="text-[#6a9955] mt-2 text-xs">// Program pauses here waiting for input...</p>
+                        </div>
+
+                        <!-- Simulated Terminal Input -->
+                        <div class="bg-black rounded-lg p-4 border border-slate-700 shadow-lg">
+                            <div class="text-slate-400 code-font text-sm mb-2">Enter your age: </div>
+                            <form id="scanf-form" class="flex gap-2">
+                                <input type="number" id="scanf-input" placeholder="Type a number..." required class="bg-slate-800 text-green-400 px-3 py-2 rounded outline-none border border-slate-600 focus:border-green-500 code-font w-48">
+                                <button type="submit" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded font-bold transition-colors">Enter ↵</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Flow Animation & Memory Box -->
+                    <div class="flex-1 w-full flex flex-col items-center">
+                        <h3 class="text-sm font-bold text-slate-500 uppercase mb-6"><i data-lucide="cpu" class="w-4 h-4 inline mr-1"></i> RAM Visualization</h3>
+                        
+                        <div class="relative w-64 h-48 flex flex-col items-center justify-center">
+                            
+                            <!-- Address Pointer Label -->
+                            <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-purple-100 text-purple-800 border border-purple-300 px-3 py-1 rounded text-xs font-mono font-bold flex items-center gap-1 shadow-sm">
+                                <span class="text-purple-500">&amp;userAge</span> = 0x7ffd5a
+                            </div>
+
+                            <!-- The Memory Box -->
+                            <div id="scanf-mem-box" class="w-40 h-32 border-4 border-slate-300 rounded-xl bg-slate-50 shadow-inner flex flex-col items-center justify-center relative transition-all duration-300">
+                                <span class="absolute top-2 left-2 text-xs font-bold text-slate-400">userAge</span>
+                                <span class="absolute top-2 right-2 text-xs text-slate-400 font-mono">int</span>
+                                
+                                <div id="scanf-mem-value" class="text-4xl font-mono text-slate-400 line-through decoration-red-500/50">8492</div> <!-- Garbage Value initially -->
+                                <div class="text-[10px] text-slate-400 mt-2 uppercase tracking-wide">Garbage Value</div>
+                            </div>
+
+                            <!-- Animated Data Packet (Hidden initially) -->
+                            <div id="data-packet" class="absolute -left-20 top-1/2 -translate-y-1/2 bg-green-500 text-white font-mono font-bold px-3 py-2 rounded shadow-lg opacity-0 pointer-events-none z-10 flex items-center gap-2">
+                                <i data-lucide="zap" class="w-4 h-4"></i> <span id="packet-val"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <hr class="border-slate-200">
+        
+        <!-- ==========================================
+             SECTION 5: The Finale (Combined)
+             ========================================== -->
+        <section id="section-combined" class="scroll-mt-24">
+            <div class="mb-8">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 font-bold text-sm mb-3">
+                    <i data-lucide="star" class="w-4 h-4"></i> The Grand Finale
+                </div>
+                <h2 class="text-3xl font-bold mb-4">5. Putting It All Together</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg">
+                    <p>Let's combine everything you've learned! Set up your variable below, and step through a complete C program to see exactly how <b>Memory Allocation</b>, <b>scanf</b>, and <b>printf</b> work together in real-time.</p>
+                </div>
+            </div>
+
+            <!-- Configuration -->
+            <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-5 mb-6 flex flex-wrap items-end gap-4 shadow-sm">
+                <div>
+                    <label class="block text-xs font-bold text-indigo-800 uppercase mb-1">Select Type</label>
+                    <select id="combo-type" class="px-3 py-2 border border-indigo-300 rounded outline-none focus:border-indigo-600 code-font h-10 min-w-[120px]">
+                        <option value="int">int</option>
+                        <option value="float">float</option>
+                        <option value="char">char</option>
+                        <option value="double">double</option>
+                    </select>
+                </div>
+                <div class="flex-1 max-w-[250px] relative">
+                    <label class="block text-xs font-bold text-indigo-800 uppercase mb-1">Variable Name</label>
+                    <input type="text" id="combo-name" value="myVar" class="w-full px-3 py-2 border border-indigo-300 rounded outline-none focus:border-indigo-600 code-font h-10">
+                    
+                    <!-- Real-time Naming Rules Validator -->
+                    <div class="absolute top-16 left-0 w-full bg-white border border-slate-200 shadow-lg rounded p-3 text-xs z-30 hidden" id="combo-rule-popup">
+                        <div class="font-bold text-slate-600 mb-2 border-b pb-1">Naming Rule Checklist:</div>
+                        <div class="flex items-center gap-2 mb-1" id="combo-rule-start"><i data-lucide="x-circle" class="w-4 h-4 text-red-500"></i> <span class="text-slate-600">Starts with letter or _</span></div>
+                        <div class="flex items-center gap-2 mb-1" id="combo-rule-chars"><i data-lucide="x-circle" class="w-4 h-4 text-red-500"></i> <span class="text-slate-600">Only letters, numbers, or _</span></div>
+                        <div class="flex items-center gap-2" id="combo-rule-keyword"><i data-lucide="check-circle-2" class="w-4 h-4 text-green-500"></i> <span class="text-slate-600">Not a reserved keyword</span></div>
+                    </div>
+                </div>
+                <button id="combo-start-btn" onclick="startComboSimulation()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold transition-colors h-10 shadow">
+                    Generate & Run Program
+                </button>
+            </div>
+
+            <!-- Execution Workspace -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 relative" id="combo-workspace" style="display: none;">
+                
+                <!-- Left: Code Editor -->
+                <div class="bg-[#1e1e1e] rounded-xl shadow-xl border border-slate-700 overflow-hidden flex flex-col h-[400px]">
+                    <div class="bg-[#2d2d2d] px-4 py-2 border-b border-black text-slate-300 text-xs font-mono font-bold flex justify-between">
+                        <span>main.c</span>
+                        <span id="combo-status" class="text-indigo-400">Ready</span>
+                    </div>
+                    <div class="p-5 text-sm code-font text-[#d4d4d4] leading-loose flex-1 overflow-y-auto">
+                        <div><span class="text-[#c586c0]">#include</span> <span class="text-[#ce9178]">&lt;stdio.h&gt;</span></div>
+                        <br>
+                        <div><span class="text-[#569cd6]">int</span> <span class="text-[#dcdcaa]">main</span>() {</div>
+                        
+                        <div id="combo-line-1" class="code-line text-slate-500 ml-4"><span class="text-[#569cd6]" id="c-type">int</span> <span id="c-name">myVar</span>;</div>
+                        <div id="combo-line-2" class="code-line text-slate-500 ml-4"><span class="text-[#dcdcaa]">printf</span>(<span class="text-[#ce9178]">"Enter a value: "</span>);</div>
+                        <div id="combo-line-3" class="code-line text-slate-500 ml-4"><span class="text-[#dcdcaa]">scanf</span>(<span class="text-[#ce9178]">"<span id="c-spec1">%d</span>"</span>, &amp;<span id="c-name2">myVar</span>);</div>
+                        <div id="combo-line-4" class="code-line text-slate-500 ml-4"><span class="text-[#dcdcaa]">printf</span>(<span class="text-[#ce9178]">"You entered: <span id="c-spec2">%d</span>\\n"</span>, <span id="c-name3">myVar</span>);</div>
+                        
+                        <div class="ml-4 mt-2 text-slate-500"><span class="text-[#c586c0]">return</span> <span class="text-[#b5cea8]">0</span>;</div>
+                        <div>}</div>
+                    </div>
+                    <div class="p-4 bg-slate-800 border-t border-slate-700 text-center">
+                        <button id="combo-next-btn" onclick="advanceComboStep()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded font-bold w-full transition-colors hidden">
+                            Execute Next Line
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Visualizer (RAM + Terminal) -->
+                <div class="flex flex-col gap-4 h-[400px]">
+                    <!-- RAM Section -->
+                    <div class="flex-1 bg-slate-100 rounded-xl border border-slate-300 shadow-inner p-4 relative flex flex-col items-center justify-center overflow-hidden">
+                        <div class="absolute top-2 left-3 text-xs font-bold text-slate-400 uppercase">System RAM</div>
+                        
+                        <!-- Empty State -->
+                        <div id="combo-ram-empty" class="text-slate-400 text-sm">Memory unallocated.</div>
+                        
+                        <!-- Memory Box -->
+                        <div id="combo-ram-box" class="w-48 h-32 border-4 border-slate-300 rounded-xl bg-white shadow-lg flex flex-col items-center justify-center relative transition-all duration-300 hidden">
+                            <span class="absolute -top-6 left-1/2 -translate-x-1/2 bg-purple-100 text-purple-800 border border-purple-300 px-2 py-0.5 rounded text-[10px] font-mono font-bold flex items-center shadow-sm whitespace-nowrap">
+                                &amp;<span id="ram-name-lbl" class="ml-1"></span> = 0xAAFF
+                            </span>
+                            <span id="ram-type-lbl" class="absolute top-2 right-2 text-[10px] text-slate-400 font-bold uppercase"></span>
+                            
+                            <div id="combo-ram-val" class="text-3xl font-mono text-slate-400 line-through decoration-red-500/50">??</div>
+                            <div id="combo-ram-desc" class="text-[10px] text-slate-400 mt-2 uppercase tracking-wide">Garbage Value</div>
+                        </div>
+
+                        <!-- Data Flow Animation -->
+                        <div id="combo-flow" class="absolute bottom-[-20px] left-1/2 -translate-x-1/2 bg-green-500 text-white font-mono font-bold px-3 py-1 rounded shadow-lg opacity-0 pointer-events-none z-10 hidden">
+                            <i data-lucide="arrow-up" class="w-3 h-3 inline"></i> <span id="combo-flow-val"></span>
+                        </div>
+                    </div>
+
+                    <!-- Terminal Section -->
+                    <div class="h-32 bg-black rounded-xl border border-slate-700 shadow-lg p-3 flex flex-col">
+                        <div class="text-[10px] text-slate-500 mb-1 font-mono font-bold">TERMINAL</div>
+                        <div id="combo-terminal-out" class="text-green-400 font-mono text-sm leading-relaxed whitespace-pre-wrap flex-1 overflow-y-auto">
+                            <!-- Terminal Content -->
+                        </div>
+                        <div id="combo-terminal-in-container" class="hidden mt-1">
+                            <form id="combo-form" class="flex gap-2" onsubmit="submitComboInput(event)">
+                                <input type="text" id="combo-input" autocomplete="off" class="bg-slate-800 text-green-400 px-2 py-1 rounded outline-none border border-slate-600 focus:border-green-500 code-font flex-1 text-sm">
+                                <button type="submit" class="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded text-sm font-bold">Enter</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        /* =========================================
+           GLOBAL CONSTANTS & UTILS
+           ========================================= */
+        const cKeywords = new Set([
+            "auto", "break", "case", "char", "const", "continue", "default", "do", 
+            "double", "else", "enum", "extern", "float", "for", "goto", "if", 
+            "int", "long", "register", "return", "short", "signed", "sizeof", 
+            "static", "struct", "switch", "typedef", "union", "unsigned", "void", 
+            "volatile", "while"
+        ]);
+
+        const typeSizes = { 'int': 4, 'float': 4, 'char': 1, 'double': 8 };
+
+        /* =========================================
+           SECTION 1: DATA TYPES TABS
+           ========================================= */
+        function showDataType(type) {
+            // Hide all contents
+            document.querySelectorAll('.dt-info').forEach(el => {
+                el.classList.add('hidden');
+            });
+            // Show selected content
+            const target = document.getElementById(`dt-info-${type}`);
+            if (target) {
+                target.classList.remove('hidden');
+                // Retrigger animation
+                target.classList.remove('animate-fade-in');
+                void target.offsetWidth;
+                target.classList.add('animate-fade-in');
+            }
+
+            // Reset all tabs
+            document.querySelectorAll('.dt-tab').forEach(btn => {
+                btn.className = 'dt-tab flex-shrink-0 text-left px-4 py-3 rounded-lg font-bold code-font text-slate-600 hover:bg-slate-200 border-2 border-transparent transition-all';
+            });
+            // Highlight active tab
+            const activeTab = document.getElementById(`tab-dt-${type}`);
+            if (activeTab) {
+                if (type === 'int') activeTab.className = 'dt-tab flex-shrink-0 text-left px-4 py-3 rounded-lg font-bold code-font bg-blue-100 text-blue-800 border-2 border-blue-400 transition-all';
+                else if (type === 'float') activeTab.className = 'dt-tab flex-shrink-0 text-left px-4 py-3 rounded-lg font-bold code-font bg-purple-100 text-purple-800 border-2 border-purple-400 transition-all';
+                else if (type === 'char') activeTab.className = 'dt-tab flex-shrink-0 text-left px-4 py-3 rounded-lg font-bold code-font bg-emerald-100 text-emerald-800 border-2 border-emerald-400 transition-all';
+                else if (type === 'double') activeTab.className = 'dt-tab flex-shrink-0 text-left px-4 py-3 rounded-lg font-bold code-font bg-amber-100 text-amber-800 border-2 border-amber-400 transition-all';
+            }
+        }
+
+        /* =========================================
+           SECTION 2: MEMORY ALLOCATOR LOGIC
+           ========================================= */
+        const allocatedVars = {};
+        const memBoard = document.getElementById('memory-board');
+        const emptyRam = document.getElementById('empty-ram');
+        const varError = document.getElementById('var-error');
+        const varErrorMsg = document.getElementById('var-error-msg');
+        
+        // Real-time Validation Logic
+        const varNameInput = document.getElementById('var-name');
+        const rulePopup = document.getElementById('rule-popup');
+        const submitBtn = document.getElementById('var-submit-btn');
+
+        varNameInput.addEventListener('focus', () => { rulePopup.classList.remove('hidden'); });
+        varNameInput.addEventListener('blur', () => { 
+            setTimeout(() => rulePopup.classList.add('hidden'), 200); 
+        });
+
+        varNameInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim();
+            let passStart = false;
+            let passChars = false;
+            let passKeyword = false;
+
+            // Rule 1: Starts with letter or underscore
+            if (/^[a-zA-Z_]/.test(val)) passStart = true;
+            // Rule 2: Only letters, numbers, underscores
+            if (val.length > 0 && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(val)) passChars = true;
+            // Rule 3: Not a keyword
+            if (val.length > 0 && !cKeywords.has(val)) passKeyword = true;
+
+            updateRuleUI('rule-start', passStart, val.length > 0);
+            updateRuleUI('rule-chars', passChars, val.length > 0);
+            updateRuleUI('rule-keyword', passKeyword, val.length > 0);
+
+            if (val.length > 0 && passStart && passChars && passKeyword) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('bg-slate-300', 'text-slate-500', 'cursor-not-allowed');
+                submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700', 'text-white');
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('bg-slate-300', 'text-slate-500', 'cursor-not-allowed');
+                submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'text-white');
+            }
+        });
+
+        function updateRuleUI(id, passed, hasInput) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            
+            // Extract the existing text label
+            const textSpan = el.querySelector('span.text-slate-600');
+            const text = textSpan ? textSpan.innerText : '';
+            
+            // Generate the new icon HTML
+            let iconHtml = '';
+            if (!hasInput) {
+                iconHtml = `<i data-lucide="x-circle" class="w-4 h-4 text-slate-300"></i>`;
+            } else if (passed) {
+                iconHtml = `<i data-lucide="check-circle-2" class="w-4 h-4 text-green-500"></i>`;
+            } else {
+                iconHtml = `<i data-lucide="x-circle" class="w-4 h-4 text-red-500"></i>`;
+            }
+            
+            // Replace the contents and re-render the Lucide icons
+            el.innerHTML = `${iconHtml} <span class="text-slate-600">${text}</span>`;
+            lucide.createIcons();
+        }
+
+        // Form Submission
+        document.getElementById('var-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const type = document.getElementById('var-type').value;
+            const name = document.getElementById('var-name').value.trim();
+            let value = document.getElementById('var-value').value;
+            const isConst = document.getElementById('var-const').checked;
+
+            varError.classList.add('hidden');
+
+            if (allocatedVars[name]) {
+                showError(`Variable '${name}' is already defined in this scope.`);
+                return;
+            }
+
+            if (type === 'char' && value.length > 1) value = `'${value.charAt(0)}'`;
+            else if (type === 'char' && !value.startsWith("'")) value = `'${value || 'A'}'`;
+            if(!value) value = (type==='char') ? "'?'" : "0";
+
+            allocatedVars[name] = { type, value, isConst };
+            renderMemoryBlock(name, type, value, isConst);
+            
+            document.getElementById('var-name').value = '';
+            document.getElementById('var-value').value = '';
+            varNameInput.dispatchEvent(new Event('input')); // reset validation state
+        });
+
+        function showError(msg) {
+            varErrorMsg.innerText = msg;
+            varError.classList.remove('hidden');
+            varError.classList.remove('animate-fade-in');
+            void varError.offsetWidth;
+            varError.classList.add('animate-fade-in');
+        }
+
+        function renderMemoryBlock(name, type, value, isConst) {
+            emptyRam.style.display = 'none';
+            const bytes = typeSizes[type];
+            let bytesHtml = '';
+            for(let i=0; i<bytes; i++) bytesHtml += `<div class="memory-byte"></div>`;
+
+            const box = document.createElement('div');
+            box.className = `animate-fade-in relative border-2 rounded-lg p-3 w-48 shadow-lg flex flex-col z-20 type-${type}`;
+            box.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-xs font-bold uppercase tracking-wider opacity-80">${type}</span>
+                    ${isConst ? `<i data-lucide="lock" class="w-4 h-4 text-red-500" title="Constant (Immutable)"></i>` : ''}
+                </div>
+                <div class="text-xl font-bold font-mono truncate mb-2" title="${value}">${value}</div>
+                <div class="mt-auto bg-white/60 px-2 py-1 rounded text-sm font-bold truncate flex justify-between items-center border border-black/10">
+                    <span>${name}</span>
+                    <span class="text-[10px] opacity-70">${bytes} Bytes</span>
+                </div>
+                <div class="flex gap-0.5 mt-2 justify-center opacity-70">
+                    ${bytesHtml}
+                </div>
+                <button onclick="deleteVar('${name}')" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow hover:bg-red-600 transition-colors opacity-0 hover:opacity-100 group-hover:opacity-100"><i data-lucide="x" class="w-3 h-3"></i></button>
+            `;
+            box.classList.add('group');
+            memBoard.appendChild(box);
+            lucide.createIcons();
+        }
+
+        window.deleteVar = function(name) {
+            delete allocatedVars[name];
+            memBoard.innerHTML = '<div id="empty-ram" class="absolute inset-0 flex items-center justify-center text-slate-500 z-10 pointer-events-none"><p>RAM is currently empty. Define a valid variable above to allocate.</p></div>';
+            if(Object.keys(allocatedVars).length > 0) {
+                emptyRam.style.display = 'none';
+                for(const [varName, data] of Object.entries(allocatedVars)) {
+                    renderMemoryBlock(varName, data.type, data.value, data.isConst);
+                }
+            } else {
+                document.getElementById('empty-ram').style.display = 'flex';
+            }
+        };
+
+        /* =========================================
+           SECTION 3: PRINTF PARSER LOGIC
+           ========================================= */
+        const pfVars = {
+            'age': { val: 25, type: 'int' },
+            'height': { val: 5.9, type: 'float' },
+            'grade': { val: 'A', type: 'char' }
+        };
+
+        function parsePrintf() {
+            const formatStr = document.getElementById('pf-string').value;
+            const specifierRegex = /%(\.\d+)?[dlfcs]/g; // added l for double %lf support theoretically
+            const matches = [...formatStr.matchAll(specifierRegex)];
+            
+            const pfMapping = document.getElementById('pf-mapping');
+            const pfOutput = document.getElementById('pf-output');
+            
+            pfMapping.innerHTML = '';
+            let outStr = formatStr;
+            const varKeys = Object.keys(pfVars);
+
+            if (matches.length === 0) {
+                pfMapping.innerHTML = '<div class="text-slate-500 italic text-xs">No format specifiers detected.</div>';
+                pfOutput.innerText = outStr;
+                return;
+            }
+
+            matches.forEach((match, index) => {
+                const specifier = match[0];
+                const varName = varKeys[index];
+                const mapRow = document.createElement('div');
+                mapRow.className = 'flex items-center gap-4 text-sm font-mono bg-[#2a2a2a] p-2 rounded animate-fade-in';
+                
+                if (varName) {
+                    const vData = pfVars[varName];
+                    let isMatch = false;
+                    let displayVal = vData.val;
+
+                    if (specifier.includes('d') && vData.type === 'int') isMatch = true;
+                    if ((specifier.includes('f') || specifier.includes('lf')) && (vData.type === 'float' || vData.type === 'double')) {
+                        isMatch = true;
+                        if (specifier.includes('.')) {
+                            const precision = parseInt(specifier.split('.')[1].replace('f','').replace('l',''));
+                            if(!isNaN(precision)) displayVal = vData.val.toFixed(precision);
+                        }
+                    }
+                    if (specifier.includes('c') && vData.type === 'char') isMatch = true;
+
+                    if (isMatch) {
+                        mapRow.innerHTML = `<span class="text-blue-400 font-bold bg-blue-900/30 px-2 py-1 rounded">${specifier}</span> <i data-lucide="arrow-right" class="w-4 h-4 text-slate-500"></i> <span class="text-[#9cdcfe]">${varName}</span> <span class="text-slate-500 text-xs">(${vData.type})</span> <i data-lucide="check-circle-2" class="w-4 h-4 text-green-500 ml-auto"></i>`;
+                        outStr = outStr.replace(specifier, displayVal);
+                    } else {
+                        mapRow.innerHTML = `<span class="text-red-400 font-bold bg-red-900/30 px-2 py-1 rounded">${specifier}</span> <i data-lucide="arrow-right" class="w-4 h-4 text-slate-500"></i> <span class="text-[#9cdcfe]">${varName}</span> <span class="text-slate-500 text-xs">(${vData.type})</span> <i data-lucide="alert-circle" class="w-4 h-4 text-red-500 ml-auto" title="Type Mismatch!"></i>`;
+                        outStr = outStr.replace(specifier, "<span class='text-red-500 underline decoration-red-500'>0.0</span>");
+                    }
+                } else {
+                    mapRow.innerHTML = `<span class="text-amber-400 font-bold bg-amber-900/30 px-2 py-1 rounded">${specifier}</span> <i data-lucide="arrow-right" class="w-4 h-4 text-slate-500"></i> <span class="text-slate-500 italic">No variable provided</span> <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500 ml-auto"></i>`;
+                    outStr = outStr.replace(specifier, "<span class='text-amber-500 bg-amber-900/20 px-1'>[GARBAGE]</span>");
+                }
+                pfMapping.appendChild(mapRow);
+            });
+            lucide.createIcons();
+            pfOutput.innerHTML = outStr;
+        }
+        parsePrintf();
+
+        /* =========================================
+           SECTION 4: SCANF LOGIC
+           ========================================= */
+        document.getElementById('scanf-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const val = document.getElementById('scanf-input').value;
+            if(!val) return;
+            
+            document.getElementById('scanf-input').disabled = true;
+            document.getElementById('packet-val').innerText = val;
+            
+            const packet = document.getElementById('data-packet');
+            packet.classList.remove('animate-flow');
+            void packet.offsetWidth;
+            packet.classList.add('animate-flow');
+
+            setTimeout(() => {
+                const memBox = document.getElementById('scanf-mem-box');
+                memBox.classList.replace('bg-slate-50', 'bg-green-100');
+                memBox.classList.replace('border-slate-300', 'border-green-500');
+                
+                const memVal = document.getElementById('scanf-mem-value');
+                memVal.className = 'text-4xl font-mono text-green-700 font-bold';
+                memVal.innerText = val;
+                
+                const desc = memVal.nextElementSibling;
+                desc.innerText = "Value successfully stored!";
+                desc.className = 'text-[10px] mt-2 uppercase tracking-wide text-green-600 font-bold';
+            }, 600);
+
+            setTimeout(() => {
+                document.getElementById('scanf-input').disabled = false;
+                document.getElementById('scanf-input').value = '';
+            }, 1500);
+        });
+
+        /* =========================================
+           SECTION 5: COMBO / FINALE LOGIC
+           ========================================= */
+        let comboStep = 0;
+        let cType = 'int';
+        let cName = 'myVar';
+        let cSpec = '%d';
+        let cValue = null;
+
+        const comboNameInput = document.getElementById('combo-name');
+        const comboRulePopup = document.getElementById('combo-rule-popup');
+        const comboStartBtn = document.getElementById('combo-start-btn');
+
+        comboNameInput.addEventListener('focus', () => { comboRulePopup.classList.remove('hidden'); });
+        comboNameInput.addEventListener('blur', () => { 
+            setTimeout(() => comboRulePopup.classList.add('hidden'), 200); 
+        });
+
+        comboNameInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim();
+            let passStart = false;
+            let passChars = false;
+            let passKeyword = false;
+
+            // Rule 1: Starts with letter or underscore
+            if (/^[a-zA-Z_]/.test(val)) passStart = true;
+            // Rule 2: Only letters, numbers, underscores
+            if (val.length > 0 && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(val)) passChars = true;
+            // Rule 3: Not a keyword
+            if (val.length > 0 && !cKeywords.has(val)) passKeyword = true;
+
+            updateRuleUI('combo-rule-start', passStart, val.length > 0);
+            updateRuleUI('combo-rule-chars', passChars, val.length > 0);
+            updateRuleUI('combo-rule-keyword', passKeyword, val.length > 0);
+
+            if (val.length > 0 && passStart && passChars && passKeyword) {
+                comboStartBtn.disabled = false;
+                comboStartBtn.classList.remove('bg-indigo-300', 'cursor-not-allowed');
+                comboStartBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+            } else {
+                comboStartBtn.disabled = true;
+                comboStartBtn.classList.add('bg-indigo-300', 'cursor-not-allowed');
+                comboStartBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+            }
+        });
+
+        // Trigger validation once at startup to set correct UI icon state for 'myVar'
+        setTimeout(() => comboNameInput.dispatchEvent(new Event('input')), 100);
+
+        function getSpecifier(type) {
+            if (type === 'int') return '%d';
+            if (type === 'float') return '%f';
+            if (type === 'double') return '%lf';
+            return '%c';
+        }
+
+        function startComboSimulation() {
+            // Retrieve Setup
+            cType = document.getElementById('combo-type').value;
+            let rawName = document.getElementById('combo-name').value.trim();
+            if(!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(rawName) || cKeywords.has(rawName)) {
+                return; // Guard clause in case execution is attempted while invalid
+            }
+            cName = rawName;
+            cSpec = getSpecifier(cType);
+            comboStep = 1;
+            cValue = null;
+
+            // Update DOM Code structure
+            document.getElementById('c-type').innerText = cType;
+            document.getElementById('c-name').innerText = cName;
+            document.getElementById('c-name2').innerText = cName;
+            document.getElementById('c-name3').innerText = cName;
+            document.getElementById('c-spec1').innerText = cSpec;
+            document.getElementById('c-spec2').innerText = cSpec;
+
+            // Reset UI States
+            document.getElementById('combo-workspace').style.display = 'grid';
+            document.getElementById('combo-status').innerText = 'Running...';
+            document.getElementById('combo-terminal-out').innerHTML = '';
+            document.getElementById('combo-terminal-in-container').classList.add('hidden');
+            document.getElementById('combo-input').value = '';
+            
+            document.getElementById('combo-ram-empty').style.display = 'block';
+            const ramBox = document.getElementById('combo-ram-box');
+            ramBox.classList.add('hidden');
+            ramBox.classList.replace('bg-green-100', 'bg-white');
+            ramBox.classList.replace('border-green-500', 'border-slate-300');
+            
+            const ramVal = document.getElementById('combo-ram-val');
+            ramVal.className = 'text-3xl font-mono text-slate-400 line-through decoration-red-500/50';
+            ramVal.innerText = cType === 'char' ? "'?'" : "8492"; // Garbage
+            document.getElementById('combo-ram-desc').innerText = "Garbage Value";
+
+            document.querySelectorAll('.code-line').forEach(el => {
+                el.classList.remove('code-active', 'text-slate-200');
+                el.classList.add('text-slate-500');
+            });
+            
+            document.getElementById('combo-next-btn').classList.remove('hidden');
+            document.getElementById('combo-next-btn').innerText = "Execute Line 1";
+            
+            // Scroll to workspace
+            document.getElementById('combo-workspace').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function advanceComboStep() {
+            // Remove previous active highlights
+            document.querySelectorAll('.code-line').forEach(el => {
+                el.classList.remove('code-active');
+            });
+
+            if (comboStep === 1) {
+                // Line 1: Allocation
+                let line = document.getElementById('combo-line-1');
+                line.classList.add('code-active');
+                line.classList.replace('text-slate-500', 'text-slate-200');
+                
+                // Show RAM
+                document.getElementById('combo-ram-empty').style.display = 'none';
+                document.getElementById('ram-name-lbl').innerText = cName;
+                document.getElementById('ram-type-lbl').innerText = cType;
+                document.getElementById('combo-ram-box').classList.remove('hidden');
+                
+                document.getElementById('combo-next-btn').innerText = "Execute Line 2";
+                comboStep = 2;
+
+            } else if (comboStep === 2) {
+                // Line 2: Printf Prompt
+                let line = document.getElementById('combo-line-2');
+                line.classList.add('code-active');
+                line.classList.replace('text-slate-500', 'text-slate-200');
+                
+                document.getElementById('combo-terminal-out').innerHTML += `Enter a value: `;
+                
+                document.getElementById('combo-next-btn').innerText = "Execute Line 3";
+                comboStep = 3;
+
+            } else if (comboStep === 3) {
+                // Line 3: Scanf Input
+                let line = document.getElementById('combo-line-3');
+                line.classList.add('code-active');
+                line.classList.replace('text-slate-500', 'text-slate-200');
+                
+                document.getElementById('combo-terminal-in-container').classList.remove('hidden');
+                document.getElementById('combo-input').focus();
+                
+                document.getElementById('combo-next-btn').classList.add('hidden'); // Wait for submit
+                comboStep = 4;
+
+            } else if (comboStep === 5) {
+                // Line 4: Printf Output
+                let line = document.getElementById('combo-line-4');
+                line.classList.add('code-active');
+                line.classList.replace('text-slate-500', 'text-slate-200');
+                
+                document.getElementById('combo-terminal-out').innerHTML += `\nYou entered: ${cValue}\n`;
+                
+                document.getElementById('combo-next-btn').innerText = "Finish";
+                comboStep = 6;
+
+            } else if (comboStep === 6) {
+                document.getElementById('combo-status').innerText = 'Program Terminated';
+                document.getElementById('combo-status').className = 'text-slate-500';
+                document.getElementById('combo-next-btn').classList.add('hidden');
+            }
+        }
+
+        function submitComboInput(e) {
+            e.preventDefault();
+            const inputEl = document.getElementById('combo-input');
+            cValue = inputEl.value;
+            if(!cValue) return;
+
+            // Enforce strict Data Type rules
+            if (cType === 'int' && !/^-?\d+$/.test(cValue)) {
+                alert("Type Mismatch: Please enter a valid integer (whole number).");
+                inputEl.value = '';
+                return;
+            } else if ((cType === 'float' || cType === 'double') && !/^-?\d+(\.\d+)?$/.test(cValue)) {
+                alert("Type Mismatch: Please enter a valid decimal number.");
+                inputEl.value = '';
+                return;
+            } else if (cType === 'char' && cValue.length > 1) {
+                alert("Type Mismatch: Please enter exactly one character for a 'char' type.");
+                inputEl.value = '';
+                return;
+            }
+
+            document.getElementById('combo-terminal-in-container').classList.add('hidden');
+            document.getElementById('combo-terminal-out').innerHTML += `<span class="text-white">${cValue}</span>`;
+
+            // Data flow animation up to RAM
+            const flow = document.getElementById('combo-flow');
+            document.getElementById('combo-flow-val').innerText = cValue;
+            
+            flow.classList.remove('hidden');
+            flow.classList.remove('animate-flow-up');
+            void flow.offsetWidth;
+            flow.classList.add('animate-flow-up');
+
+            // Update RAM midway
+            setTimeout(() => {
+                const ramBox = document.getElementById('combo-ram-box');
+                ramBox.classList.replace('bg-white', 'bg-green-100');
+                ramBox.classList.replace('border-slate-300', 'border-green-500');
+                
+                const ramVal = document.getElementById('combo-ram-val');
+                ramVal.className = 'text-3xl font-mono text-green-700 font-bold';
+                ramVal.innerText = cType === 'char' ? `'${cValue}'` : cValue;
+                
+                document.getElementById('combo-ram-desc').innerText = "Value Stored!";
+            }, 500);
+
+            // Proceed to next step automatically after animation
+            setTimeout(() => {
+                flow.classList.add('hidden');
+                document.getElementById('combo-next-btn').classList.remove('hidden');
+                document.getElementById('combo-next-btn').innerText = "Execute Line 4";
+                comboStep = 5;
+                advanceComboStep(); // Auto-advance to final print
+            }, 1200);
+        }
+
+    </script>
+</body>
+</html>

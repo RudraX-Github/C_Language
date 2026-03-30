@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The String Symphony: C Programming</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            scroll-behavior: smooth;
+        }
+        
+        .code-font { font-family: 'Fira Code', monospace; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        
+        /* Contiguous Memory Tape Styles */
+        .ram-tape {
+            display: flex;
+            align-items: flex-end;
+            padding: 2rem 1rem;
+            position: relative;
+        }
+
+        .ram-cell { 
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .ram-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 3rem;
+            height: 3.5rem;
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+            font-size: 1.25rem;
+            border: 2px solid #cbd5e1;
+            background-color: white;
+            color: #334155;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-right: -2px;
+            z-index: 10;
+        }
+        
+        .ram-cell:last-child .ram-box { margin-right: 0; }
+
+        .ram-cell.null-char .ram-box {
+            background-color: #ffe4e6;
+            border-color: #f43f5e;
+            color: #e11d48;
+            font-weight: 800;
+            z-index: 15;
+        }
+
+        .ram-cell.active .ram-box {
+            border-color: #0ea5e9;
+            background-color: #e0f2fe;
+            color: #0369a1;
+            transform: scale(1.15);
+            box-shadow: 0 10px 25px -5px rgba(14,165,233,0.4);
+            z-index: 20;
+            border-radius: 6px;
+        }
+
+        .ram-addr {
+            font-size: 0.65rem;
+            color: #64748b;
+            font-family: 'Fira Code', monospace;
+            margin-top: 0.75rem;
+            transform: rotate(45deg);
+            transform-origin: left top;
+        }
+
+        .ram-idx {
+            position: absolute;
+            top: -1.75rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #94a3b8;
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* ASCII Card Styles */
+        .ascii-card { transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .ascii-card:hover { transform: translateY(-5px); }
+
+        /* Buffer Item Animation */
+        .buffer-item { transition: all 0.4s ease; }
+        .buffer-consumed { transform: translateY(20px) scale(0.8); opacity: 0; }
+
+        /* Code Line Highlight */
+        .code-line { transition: all 0.3s; opacity: 0.6; border-left: 4px solid transparent; padding-left: 8px;}
+        .code-line.active { opacity: 1; border-left-color: #0ea5e9; background-color: rgba(14, 165, 233, 0.15); transform: translateX(4px); font-weight: bold;}
+        .code-line.evaluating { opacity: 1; border-left-color: #f59e0b; background-color: rgba(245, 158, 11, 0.15); transform: translateX(2px); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px;}
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white p-4 shadow-lg sticky top-0 z-50 border-b-4 border-cyan-500">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-cyan-500/20 p-2 rounded-lg border border-cyan-500/30">
+                    <i data-lucide="whole-word" class="text-cyan-400 w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">The String Symphony</h1>
+                    <p class="text-xs text-slate-400 font-medium">C Programming: Chars, ASCII, Null Terminators & string.h</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex gap-6 text-sm font-semibold text-slate-300">
+                <a href="#section-char" class="hover:text-white transition-colors">1. Char & ASCII</a>
+                <a href="#section-string" class="hover:text-white transition-colors">2. Strings & \0</a>
+                <a href="#section-io" class="hover:text-white transition-colors">3. I/O (Input/Output)</a>
+                <a href="#section-funcs" class="hover:text-white transition-colors font-bold text-cyan-300">4. &lt;string.h&gt;</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-1 w-full max-w-6xl mx-auto p-6 md:p-10 space-y-24 pb-32">
+        
+        <!-- ==========================================
+             SECTION 1: Char & ASCII
+             ========================================== -->
+        <section id="section-char" class="scroll-mt-24">
+            <div class="mb-8">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-800 font-bold text-sm mb-3 border border-amber-200 shadow-sm">
+                    <i data-lucide="hash" class="w-4 h-4"></i> The Integer Illusion
+                </div>
+                <h2 class="text-3xl font-bold mb-4 text-slate-800">1. Character Details & ASCII</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg leading-relaxed">
+                    <p>In C, the <code class="bg-slate-200 px-1.5 py-0.5 rounded text-slate-800 font-mono text-sm">char</code> data type takes exactly <b>1 Byte (8 bits)</b> of memory. But computers don't understand letters; they only understand numbers. C uses the <b>ASCII</b> (American Standard Code for Information Interchange) table to map integers to characters.</p>
+                    <p>This means a <code class="bg-slate-200 px-1.5 py-0.5 rounded">char</code> is actually just a small integer! You can perform math directly on characters.</p>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-8 items-stretch">
+                <!-- Interactive ASCII Explorer -->
+                <div class="bg-white rounded-2xl shadow-xl border border-slate-200 flex flex-col overflow-hidden">
+                    <div class="bg-slate-50 border-b border-slate-200 px-5 py-3 flex justify-between items-center z-10">
+                        <div class="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2"><i data-lucide="search" class="w-4 h-4 text-amber-500"></i> Interactive ASCII Decoder</div>
+                    </div>
+                    
+                    <div class="p-8 flex flex-col items-center justify-center flex-1 bg-gradient-to-b from-transparent to-amber-50/50">
+                        <div class="flex items-center gap-4 mb-8">
+                            <span class="font-bold text-slate-600">Enter a character:</span>
+                            <input type="text" id="ascii-input" value="A" maxlength="1" class="w-16 h-16 text-center text-3xl font-bold font-mono border-2 border-amber-400 rounded-xl focus:outline-none focus:ring-4 focus:ring-amber-200 transition-all uppercase bg-white shadow-inner" oninput="updateAsciiCard()">
+                        </div>
+
+                        <div class="ascii-card bg-slate-900 rounded-2xl p-6 shadow-2xl w-full max-w-sm border border-slate-700 relative overflow-hidden">
+                            <div class="absolute -right-6 -top-6 w-24 h-24 bg-amber-500/20 rounded-full blur-2xl"></div>
+                            
+                            <div class="flex justify-between items-end border-b border-slate-700 pb-4 mb-4 relative z-10">
+                                <div>
+                                    <div class="text-xs text-amber-400 font-bold uppercase tracking-wider mb-1">Character</div>
+                                    <div class="text-5xl font-mono text-white" id="ascii-char">'A'</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-xs text-blue-400 font-bold uppercase tracking-wider mb-1">Decimal (ASCII)</div>
+                                    <div class="text-4xl font-mono text-white" id="ascii-dec">65</div>
+                                </div>
+                            </div>
+                            
+                            <div class="relative z-10">
+                                <div class="text-xs text-emerald-400 font-bold uppercase tracking-wider mb-1">Binary (1 Byte in RAM)</div>
+                                <div class="text-xl font-mono text-slate-300 tracking-[0.2em]" id="ascii-bin">0100 0001</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- C Code Demonstration -->
+                <div class="bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-700 flex flex-col overflow-hidden">
+                    <div class="bg-[#1e293b] px-4 py-3 border-b border-slate-700 flex items-center gap-3">
+                        <div class="flex gap-1.5">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        </div>
+                        <span class="text-slate-300 text-xs font-mono font-bold flex items-center gap-2"><i data-lucide="terminal" class="w-3.5 h-3.5 text-amber-400"></i> char_math.c</span>
+                    </div>
+                    
+                    <div class="p-6 code-font text-sm leading-[2.5rem] text-slate-300 flex-1">
+                        <div><span class="text-blue-400 font-bold">char</span> letter = <span class="text-amber-300">'A'</span>;</div>
+                        <div class="text-slate-500 italic -mb-1 mt-2">// 1. Print as Character (%c)</div>
+                        <div class="bg-black/50 p-2 rounded border border-slate-800">
+                            <span class="text-emerald-400 font-bold">printf</span>(<span class="text-amber-300">"%c"</span>, letter); <i data-lucide="arrow-right" class="w-4 h-4 inline text-slate-500"></i> <span class="text-white font-bold">A</span>
+                        </div>
+                        
+                        <div class="text-slate-500 italic -mb-1 mt-4">// 2. Print as Integer (%d)</div>
+                        <div class="bg-black/50 p-2 rounded border border-slate-800">
+                            <span class="text-emerald-400 font-bold">printf</span>(<span class="text-amber-300">"%d"</span>, letter); <i data-lucide="arrow-right" class="w-4 h-4 inline text-slate-500"></i> <span class="text-white font-bold">65</span>
+                        </div>
+
+                        <div class="text-slate-500 italic -mb-1 mt-4">// 3. Character Math</div>
+                        <div><span class="text-blue-400 font-bold">char</span> next = letter + <span class="text-orange-300">2</span>; <span class="text-slate-500 italic">// 65 + 2 = 67</span></div>
+                        <div class="bg-black/50 p-2 rounded border border-slate-800">
+                            <span class="text-emerald-400 font-bold">printf</span>(<span class="text-amber-300">"%c"</span>, next); <i data-lucide="arrow-right" class="w-4 h-4 inline text-slate-500"></i> <span class="text-white font-bold">C</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <div class="flex items-center justify-center py-4">
+            <div class="w-full h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+        </div>
+
+        <!-- ==========================================
+             SECTION 2: Strings & \0
+             ========================================== -->
+        <section id="section-string" class="scroll-mt-24">
+            <div class="mb-8">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-100 text-rose-800 font-bold text-sm mb-3 border border-rose-200 shadow-sm">
+                    <i data-lucide="alert-octagon" class="w-4 h-4"></i> The Vital Terminator
+                </div>
+                <h2 class="text-3xl font-bold mb-4 text-slate-800">2. String Creation & The NULL Terminator (<code class="text-rose-600">\0</code>)</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg leading-relaxed">
+                    <p>In C, there is no dedicated "String" data type. A string is simply a <b>1D array of characters</b>. But how does C know where the string ends if the array is larger than the word? It uses a special hidden character called the <b>Null Terminator</b> (<code class="bg-slate-200 px-1 font-bold text-rose-600">\0</code>, ASCII value 0).</p>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden">
+                <div class="grid lg:grid-cols-12 items-stretch">
+                    
+                    <!-- Code Definition -->
+                    <div class="lg:col-span-5 bg-[#0f172a] p-6 md:p-8 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-700">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><i data-lucide="code" class="w-4 h-4"></i> Declaration Methods</div>
+                        
+                        <div class="space-y-6 code-font text-sm text-slate-300">
+                            <!-- Method 1 -->
+                            <div>
+                                <div class="text-slate-500 italic mb-1">// Method 1: String Literal (Auto adds \0)</div>
+                                <span class="text-blue-400 font-bold">char</span> str1[<span class="text-orange-300">10</span>] = <span class="text-amber-300">"Hello"</span>;
+                            </div>
+                            
+                            <!-- Method 2 -->
+                            <div>
+                                <div class="text-slate-500 italic mb-1">// Method 2: Character Array (Must manually add \0)</div>
+                                <span class="text-blue-400 font-bold">char</span> str2[<span class="text-orange-300">10</span>] = {<span class="text-amber-300">'H'</span>, <span class="text-amber-300">'i'</span>, <span class="text-rose-400 font-bold">'\0'</span>};
+                            </div>
+                        </div>
+
+                        <div class="mt-auto pt-8">
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">Interactive RAM Builder:</label>
+                            <div class="flex items-center gap-2">
+                                <span class="text-blue-400 font-bold code-font">char</span> 
+                                <span class="text-white code-font">str[10] = "</span>
+                                <input type="text" id="str-input" value="Code" maxlength="9" class="bg-slate-800 text-amber-300 border border-slate-600 rounded px-2 w-24 outline-none focus:border-cyan-400 font-bold text-center shadow-inner" oninput="renderStringRam()">
+                                <span class="text-white code-font">";</span>
+                            </div>
+                            <div class="text-xs text-rose-400 mt-2 italic">* Max 9 chars to leave room for \0</div>
+                        </div>
+                    </div>
+
+                    <!-- Visualizer -->
+                    <div class="lg:col-span-7 bg-slate-50 p-6 md:p-8 flex flex-col relative">
+                        <div class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2"><i data-lucide="cpu" class="w-4 h-4 text-cyan-500"></i> String Memory Map</div>
+                        
+                        <div class="w-full overflow-x-auto pb-8 pt-4 flex justify-center">
+                            <div id="str-ram-tape" class="ram-tape min-w-max">
+                                <!-- Generated by JS -->
+                            </div>
+                        </div>
+
+                        <div class="mt-auto bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-around gap-4 text-center">
+                            <div>
+                                <div class="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">Array Capacity</div>
+                                <div class="text-xl font-mono font-bold text-slate-800">10 Bytes</div>
+                            </div>
+                            <div class="hidden sm:block w-px bg-slate-200"></div>
+                            <div>
+                                <div class="text-xs text-cyan-600 uppercase tracking-wider font-bold mb-1">String Length (Excl. \0)</div>
+                                <div class="text-xl font-mono font-bold text-cyan-700" id="str-len-disp">4</div>
+                            </div>
+                            <div class="hidden sm:block w-px bg-slate-200"></div>
+                            <div>
+                                <div class="text-xs text-rose-600 uppercase tracking-wider font-bold mb-1">Total Memory Used</div>
+                                <div class="text-xl font-mono font-bold text-rose-700" id="str-mem-disp">5 Bytes</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <div class="flex items-center justify-center py-4">
+            <div class="w-full h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+        </div>
+
+        <!-- ==========================================
+             SECTION 3: String I/O
+             ========================================== -->
+        <section id="section-io" class="scroll-mt-24">
+            <div class="mb-8">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-sm mb-3 shadow-sm border border-emerald-200">
+                    <i data-lucide="keyboard" class="w-4 h-4"></i> Input Buffers
+                </div>
+                <h2 class="text-3xl font-bold mb-4 text-slate-800">3. String I/O: The Space Bar Problem</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg leading-relaxed">
+                    <p>When reading strings from the user, <code class="bg-slate-200 px-1 font-bold">scanf("%s", str);</code> is dangerous because it <b>stops reading as soon as it hits a whitespace</b>. To safely read a full sentence with spaces, C programmers use <code class="bg-slate-200 px-1 font-bold">fgets()</code>.</p>
+                </div>
+            </div>
+
+            <!-- Interactive IO Visualizer -->
+            <div class="grid lg:grid-cols-12 gap-8 items-stretch">
+                
+                <!-- C Code Block (Left) -->
+                <div class="lg:col-span-5 bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-700 flex flex-col overflow-hidden">
+                    <div class="bg-[#1e293b] px-4 py-3 border-b border-slate-700 flex items-center gap-3">
+                        <div class="flex gap-1.5">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        </div>
+                        <span class="text-slate-300 text-xs font-mono font-bold flex items-center gap-2"><i data-lucide="terminal" class="w-3.5 h-3.5 text-emerald-400"></i> string_input.c</span>
+                    </div>
+                    
+                    <div class="p-6 code-font text-sm leading-[2.5rem] text-slate-300 flex-1 flex flex-col relative">
+                        <div id="io-code-decl" class="code-line rounded"><span class="text-blue-400 font-bold">char</span> name[<span class="text-orange-300">10</span>];</div>
+                        
+                        <div id="io-code-pr1" class="code-line text-green-300 rounded mt-2">printf("Enter name: ");</div>
+
+                        <!-- Dynamic Input Logic Switcher -->
+                        <div id="io-code-scanf" class="code-line mt-2 rounded">
+                            <span class="text-emerald-400 font-bold">scanf</span>(<span class="text-amber-300">"%s"</span>, name);
+                        </div>
+                        <div id="io-code-fgets" class="code-line mt-2 rounded hidden">
+                            <span class="text-emerald-400 font-bold">fgets</span>(name, <span class="text-purple-400">sizeof</span>(name), <span class="text-blue-400 font-bold">stdin</span>);
+                        </div>
+
+                        <div id="io-code-pr2" class="code-line text-green-300 mt-2 rounded">printf("Stored: %s\\n", name);</div>
+
+                        <!-- Interaction Controls -->
+                        <div class="mt-auto pt-8 border-t border-slate-700">
+                            <label class="text-xs font-bold text-emerald-400 uppercase tracking-widest block mb-3"><i data-lucide="terminal-square" class="w-4 h-4 inline mr-1"></i> Simulated Terminal Input</label>
+                            <div class="flex items-center mb-6">
+                                <span class="text-slate-500 mr-2 code-font text-lg">&gt;</span>
+                                <input type="text" id="io-input" value="John Doe" class="w-full bg-slate-800/50 text-white border-b-2 border-slate-600 px-2 py-2 outline-none focus:border-emerald-400 font-bold code-font text-lg transition-colors">
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="runIoSim('scanf')" id="btn-scanf" class="bg-rose-600 hover:bg-rose-500 text-white py-3 rounded-lg text-xs font-bold transition-all shadow-[0_4px_0_#be123c] active:translate-y-[4px] active:shadow-none whitespace-nowrap">
+                                    Execute scanf
+                                </button>
+                                <button onclick="runIoSim('fgets')" id="btn-fgets" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-lg text-xs font-bold transition-all shadow-[0_4px_0_#047857] active:translate-y-[4px] active:shadow-none whitespace-nowrap">
+                                    Execute fgets
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory & Buffer Visualizer (Right) -->
+                <div class="lg:col-span-7 flex flex-col gap-6">
+                    
+                    <!-- STDIN Buffer -->
+                    <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-6 flex flex-col relative overflow-hidden">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <i data-lucide="inbox" class="w-4 h-4 text-amber-500"></i> The Input Buffer (stdin)
+                        </div>
+                        
+                        <div class="bg-slate-800/90 rounded-xl border border-slate-700 p-4 h-24 flex items-center shadow-inner overflow-hidden relative">
+                            <div class="absolute left-2 text-[10px] text-slate-500 -rotate-90 origin-left uppercase font-bold tracking-widest">Queue</div>
+                            <div id="stdin-buffer" class="flex gap-1 ml-6 overflow-x-auto pb-2 w-full font-mono">
+                                <span class="text-slate-500 italic text-sm my-auto">Awaiting execution...</span>
+                            </div>
+                        </div>
+
+                        <!-- Info Panel -->
+                        <div id="io-explanation" class="mt-4 bg-slate-50 border border-slate-200 p-4 rounded-xl text-sm text-slate-600 leading-relaxed min-h-[90px] shadow-sm">
+                            Click an execution button on the left to see how C parses your input from the <code>stdin</code> buffer into memory.
+                        </div>
+                    </div>
+
+                    <!-- RAM Variable Array -->
+                    <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-6 flex flex-col flex-1 relative overflow-hidden">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center justify-between">
+                            <span class="flex items-center gap-2"><i data-lucide="cpu" class="w-4 h-4 text-blue-500"></i> RAM Array Memory</span>
+                            <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 font-mono font-bold shadow-sm">char name[10];</span>
+                        </div>
+                        
+                        <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 h-28 flex items-center shadow-inner overflow-x-auto relative mt-2">
+                            <div id="io-ram-tape" class="ram-tape !p-0 min-w-max mx-auto transform scale-[0.85] origin-left sm:origin-center sm:scale-100">
+                                <!-- Injected RAM -->
+                            </div>
+                        </div>
+
+                        <!-- Result Display -->
+                        <div class="mt-6 bg-slate-900 rounded-xl border border-slate-800 p-4 flex flex-col justify-center shadow-inner text-center">
+                            <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Final String Value Stored</div>
+                            <div id="io-final-val" class="code-font text-2xl font-bold text-white tracking-wider">"?"</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <div class="flex items-center justify-center py-4">
+            <div class="w-full h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+        </div>
+
+        <!-- ==========================================
+             SECTION 4: Built-in Functions <string.h>
+             ========================================== -->
+        <section id="section-funcs" class="scroll-mt-24">
+            <div class="mb-8">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-100 text-cyan-800 font-bold text-sm mb-3 border border-cyan-200 shadow-sm">
+                    <i data-lucide="wrench" class="w-4 h-4"></i> &lt;string.h&gt; Library
+                </div>
+                <h2 class="text-3xl font-bold mb-4 text-slate-800">4. Built-in String Functions</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg leading-relaxed">
+                    <p>Because strings are arrays, you cannot use normal operators like <code class="bg-slate-200 px-1 rounded font-bold">=</code> to copy them or <code class="bg-slate-200 px-1 rounded font-bold">==</code> to compare them. You must include <code class="bg-slate-200 px-1 rounded font-bold">&lt;string.h&gt;</code> and use its built-in functions.</p>
+                </div>
+            </div>
+
+            <!-- Function Playground -->
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden flex flex-col">
+                
+                <!-- Setup Area -->
+                <div class="bg-slate-50 border-b border-slate-200 p-6 md:p-8 flex flex-col md:flex-row gap-6 md:gap-12 items-center justify-center z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="text-right">
+                            <div class="text-xs font-bold text-slate-400 uppercase">Buffer: 15 chars</div>
+                            <label class="font-bold text-cyan-700 code-font">str1</label>
+                        </div>
+                        <input type="text" id="fn-str1" value="Apple" maxlength="14" class="w-32 bg-white border-2 border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-cyan-500 font-bold code-font text-center shadow-sm">
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <div class="text-right">
+                            <div class="text-xs font-bold text-slate-400 uppercase">Buffer: 15 chars</div>
+                            <label class="font-bold text-purple-700 code-font">str2</label>
+                        </div>
+                        <input type="text" id="fn-str2" value="Pie" maxlength="14" class="w-32 bg-white border-2 border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-purple-500 font-bold code-font text-center shadow-sm">
+                    </div>
+                </div>
+
+                <!-- Execution Area -->
+                <div class="grid lg:grid-cols-3 items-stretch bg-slate-900">
+                    
+                    <!-- Function Selector -->
+                    <div class="lg:col-span-1 border-b lg:border-b-0 lg:border-r border-slate-700 p-6 flex flex-col gap-3">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2"><i data-lucide="play-circle" class="w-4 h-4"></i> Select Function</h3>
+                        
+                        <button onclick="execStringFn('strlen', this)" class="fn-btn w-full text-left px-4 py-3 rounded-lg border border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700 hover:border-cyan-400 transition-colors group">
+                            <code class="font-bold text-cyan-300">strlen(str1)</code>
+                            <div class="text-xs text-slate-400 mt-1 group-hover:text-slate-300">Finds length (ignoring \0)</div>
+                        </button>
+                        
+                        <button onclick="execStringFn('strcpy', this)" class="fn-btn w-full text-left px-4 py-3 rounded-lg border border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700 hover:border-cyan-400 transition-colors group">
+                            <code class="font-bold text-cyan-300">strcpy(str1, str2)</code>
+                            <div class="text-xs text-slate-400 mt-1 group-hover:text-slate-300">Copies str2 INTO str1</div>
+                        </button>
+
+                        <button onclick="execStringFn('strcat', this)" class="fn-btn w-full text-left px-4 py-3 rounded-lg border border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700 hover:border-cyan-400 transition-colors group">
+                            <code class="font-bold text-cyan-300">strcat(str1, str2)</code>
+                            <div class="text-xs text-slate-400 mt-1 group-hover:text-slate-300">Appends str2 to end of str1</div>
+                        </button>
+
+                        <button onclick="execStringFn('strcmp', this)" class="fn-btn w-full text-left px-4 py-3 rounded-lg border border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700 hover:border-cyan-400 transition-colors group">
+                            <code class="font-bold text-cyan-300">strcmp(str1, str2)</code>
+                            <div class="text-xs text-slate-400 mt-1 group-hover:text-slate-300">Compares alphabetically</div>
+                        </button>
+                    </div>
+
+                    <!-- Visual Output -->
+                    <div class="lg:col-span-2 p-6 md:p-8 flex flex-col justify-center relative min-h-[300px] overflow-hidden">
+                        
+                        <!-- Initial state prompt -->
+                        <div id="fn-placeholder" class="text-slate-500 flex flex-col items-center gap-2 absolute inset-0 justify-center transition-opacity duration-300">
+                            <i data-lucide="terminal-square" class="w-10 h-10 opacity-50 mb-2"></i>
+                            Select a function on the left to execute.
+                        </div>
+
+                        <!-- Result Area -->
+                        <div id="fn-result-area" class="hidden w-full max-w-lg mx-auto flex flex-col gap-6">
+                            
+                            <div class="bg-black/50 border border-slate-700 rounded-xl p-4 shadow-inner text-center">
+                                <div class="text-xs text-slate-500 uppercase font-bold tracking-widest mb-2">Return Value / Console Output</div>
+                                <div id="fn-return-val" class="code-font text-2xl font-bold text-emerald-400 animate-fade-in">-</div>
+                            </div>
+
+                            <div id="fn-mem-update" class="bg-slate-800 border border-slate-600 rounded-xl p-4 text-center hidden">
+                                <div class="text-xs text-cyan-400 uppercase font-bold tracking-widest mb-3">str1 Memory After Execution</div>
+                                <div class="w-full overflow-x-auto flex justify-center pb-2">
+                                    <div id="fn-str1-tape" class="ram-tape !p-0 min-w-max scale-90 origin-top">
+                                        <!-- Injected RAM -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-sm text-slate-400 italic text-center" id="fn-explanation"></div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Globals and Utilities
+        lucide.createIcons();
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        const el = id => document.getElementById(id);
+        
+        // Prevents Cross-Site Scripting (XSS) when rendering user inputs to HTML
+        const escapeHTML = str => (str || '').toString().replace(/[&<>'"]/g, 
+            tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag])
+        );
+
+        /* =========================================
+           SECTION 1: CHAR & ASCII
+           ========================================= */
+        function updateAsciiCard() {
+            const inputVal = el('ascii-input').value || ' ';
+            const char = inputVal.charAt(0);
+            const asciiVal = char.charCodeAt(0);
+            
+            // Format 8-bit binary representation safely
+            const binPadded = asciiVal.toString(2).padStart(8, '0');
+            const binFormatted = binPadded.substring(0,4) + ' ' + binPadded.substring(4);
+
+            el('ascii-char').textContent = `'${char}'`;
+            el('ascii-dec').textContent = asciiVal;
+            el('ascii-bin').textContent = binFormatted;
+        }
+
+        /* =========================================
+           SECTION 2: STRINGS & NULL TERMINATOR
+           ========================================= */
+        function renderStringRam() {
+            // Cap at 9 characters to legally fit the \0 in a 10-length array
+            const rawStr = el('str-input').value;
+            const str = rawStr.substring(0, 9); 
+            
+            const container = el('str-ram-tape');
+            container.innerHTML = ''; 
+            
+            const capacity = 10;
+            const baseAddr = 0x3000;
+            
+            // Build nodes functionally instead of massive string concats
+            let cellsHTML = '';
+
+            for(let i = 0; i < capacity; i++) {
+                const isChar = i < str.length;
+                const isNull = i === str.length;
+                
+                let val = '?';
+                let cssClass = '';
+                let nullLabel = '';
+
+                if (isChar) {
+                    val = `'${escapeHTML(str[i])}'`;
+                    cssClass = 'active';
+                } else if (isNull) {
+                    val = '\\0';
+                    cssClass = 'null-char';
+                    nullLabel = `<div class="absolute -top-10 text-rose-500 text-[10px] font-bold whitespace-nowrap bg-rose-100 px-2 py-1 rounded border border-rose-300 shadow animate-fade-in">Null Terminator</div>`;
+                }
+
+                const addr = (baseAddr + i).toString(16).toUpperCase();
+                
+                cellsHTML += `
+                    <div class="ram-cell ${cssClass}">
+                        <div class="ram-idx">${i}</div>
+                        <div class="ram-box">${val}</div>
+                        <div class="ram-addr">0x${addr}</div>
+                        ${nullLabel}
+                    </div>
+                `;
+            }
+            
+            container.insertAdjacentHTML('beforeend', cellsHTML);
+            el('str-len-disp').textContent = str.length;
+            el('str-mem-disp').textContent = `${str.length + 1} Bytes`;
+        }
+        
+        // Initialize Section 2
+        renderStringRam();
+
+        /* =========================================
+           SECTION 3: STRING I/O (SCANF VS FGETS)
+           ========================================= */
+        function initEmptyIoRam() {
+            const container = el('io-ram-tape');
+            let cellsHTML = '';
+            for(let i=0; i<10; i++) {
+                cellsHTML += `
+                    <div class="ram-cell" id="io-cell-${i}">
+                        <div class="ram-idx">${i}</div>
+                        <div class="ram-box text-slate-400" id="io-box-${i}">?</div>
+                    </div>`;
+            }
+            container.innerHTML = cellsHTML;
+            el('io-final-val').textContent = '"?"';
+            el('io-explanation').innerHTML = "Click an execution button on the left to see how C parses your input from the <code>stdin</code> buffer into memory.";
+        }
+        initEmptyIoRam();
+
+        function resetIoCodeHighlights() {
+            const lines = ['io-code-decl', 'io-code-pr1', 'io-code-scanf', 'io-code-fgets', 'io-code-pr2'];
+            lines.forEach(id => {
+                const element = el(id);
+                if (element) element.classList.remove('active', 'evaluating');
+            });
+        }
+
+        async function runIoSim(mode) {
+            const btnScanf = el('btn-scanf');
+            const btnFgets = el('btn-fgets');
+            btnScanf.disabled = true;
+            btnFgets.disabled = true;
+
+            resetIoCodeHighlights();
+
+            // Toggle Code Display
+            const scanfCode = el('io-code-scanf');
+            const fgetsCode = el('io-code-fgets');
+            if (mode === 'scanf') {
+                scanfCode.classList.remove('hidden');
+                fgetsCode.classList.add('hidden');
+            } else {
+                scanfCode.classList.add('hidden');
+                fgetsCode.classList.remove('hidden');
+            }
+
+            const inputVal = el('io-input').value;
+            // The actual input string includes a newline when the user hits 'Enter'
+            const rawStr = inputVal + '\n'; 
+            
+            const bufferEl = el('stdin-buffer');
+            const ramEl = el('io-ram-tape');
+            const expEl = el('io-explanation');
+            const finalVal = el('io-final-val');
+
+            // 1. Reset RAM UI
+            for(let i=0; i<10; i++) {
+                el(`io-cell-${i}`).className = 'ram-cell';
+                el(`io-box-${i}`).textContent = '?';
+            }
+            
+            // Highlight Declaration
+            el('io-code-decl').classList.add('active');
+            await sleep(600);
+            el('io-code-decl').classList.remove('active');
+
+            // Highlight Printf 1
+            el('io-code-pr1').classList.add('active');
+            await sleep(600);
+            el('io-code-pr1').classList.remove('active');
+
+            // 2. Populate Stdin Buffer UI safely
+            bufferEl.innerHTML = '';
+            const bufferNodes = Array.from(rawStr).map((char, i) => {
+                let disp = char;
+                if (char === ' ') disp = '␣'; 
+                if (char === '\n') disp = '\\n';
+                
+                return `<div class="buffer-item bg-amber-100 text-amber-800 border border-amber-300 font-bold px-3 py-2 rounded text-lg min-w-[2.5rem] text-center shadow-sm" id="buf-item-${i}">${escapeHTML(disp)}</div>`;
+            });
+            bufferEl.insertAdjacentHTML('beforeend', bufferNodes.join(''));
+
+            expEl.innerHTML = `User typed <code class="text-emerald-600 font-bold">"${escapeHTML(inputVal)}"</code> and pressed Enter. The OS places this into the <code>stdin</code> buffer with a trailing newline <code class="text-rose-500 font-bold">\\n</code>.`;
+            await sleep(1500);
+
+            // Activate Input Function Code Line
+            const activeCodeLine = mode === 'scanf' ? scanfCode : fgetsCode;
+            activeCodeLine.classList.add('evaluating');
+
+            // 3. Simulation Logic State
+            let memoryArray = [];
+            let bufferIndex = 0;
+            
+            while (bufferIndex < rawStr.length) {
+                const char = rawStr[bufferIndex];
+                const isSpace = char === ' ';
+                const isNewline = char === '\n';
+                const bufferBox = el(`buf-item-${bufferIndex}`);
+                
+                // Break conditions based on I/O mode
+                if (mode === 'scanf' && (isSpace || isNewline)) {
+                    expEl.innerHTML = `<code>scanf("%s")</code> immediately stops reading when it encounters whitespace (space, tab, or newline). It halts and appends <code class="text-rose-500 font-bold">\\0</code> to the array.`;
+                    break;
+                }
+
+                if (mode === 'fgets') {
+                    // Buffer size is 10. Maximum chars we can read is 9 (to leave room for \0)
+                    if (memoryArray.length >= 9) {
+                        expEl.innerHTML = `<code>fgets(name, 10, stdin)</code> reached the maximum buffer size (10-1 = 9 characters). It stops reading to prevent Buffer Overflow, and appends <code class="text-rose-500 font-bold">\\0</code>.`;
+                        break;
+                    }
+                    
+                    // consume animation
+                    bufferBox.classList.add('bg-blue-200', 'border-blue-400', 'text-blue-800');
+                    await sleep(400);
+                    bufferBox.classList.add('buffer-consumed');
+
+                    memoryArray.push(char);
+                    const ramBox = el(`io-box-${memoryArray.length - 1}`);
+                    const ramCell = el(`io-cell-${memoryArray.length - 1}`);
+                    ramBox.textContent = isNewline ? '\\n' : (isSpace ? '␣' : char);
+                    ramCell.classList.add('active');
+
+                    if (isNewline) {
+                        expEl.innerHTML = `<code>fgets</code> encounters the newline <code class="text-blue-500 font-bold">\\n</code>, reads it into the array, and then stops. It will now append <code class="text-rose-500 font-bold">\\0</code>.`;
+                        bufferIndex++;
+                        break;
+                    }
+                } else {
+                    // Normal scanf character reading
+                    bufferBox.classList.add('bg-blue-200', 'border-blue-400', 'text-blue-800');
+                    await sleep(400);
+                    bufferBox.classList.add('buffer-consumed');
+                    
+                    memoryArray.push(char);
+                    const ramBox = el(`io-box-${memoryArray.length - 1}`);
+                    const ramCell = el(`io-cell-${memoryArray.length - 1}`);
+                    ramBox.textContent = char;
+                    ramCell.classList.add('active');
+                }
+                
+                await sleep(400);
+                bufferIndex++;
+            }
+
+            activeCodeLine.classList.replace('evaluating', 'active');
+
+            // 4. Append \0 Terminator
+            await sleep(600);
+            
+            const nullIdx = Math.min(memoryArray.length, 9); 
+            const nullBox = el(`io-box-${nullIdx}`);
+            const nullCell = el(`io-cell-${nullIdx}`);
+            
+            nullBox.textContent = '\\0';
+            nullCell.classList.add('null-char');
+            
+            // Clean up final string for display
+            let finalStr = memoryArray.join('').replace(/\n/g, '\\n');
+            finalVal.textContent = `"${finalStr}"`;
+            
+            await sleep(600);
+            activeCodeLine.classList.remove('active');
+
+            // Highlight final Printf
+            el('io-code-pr2').classList.add('active');
+            
+            // Process leftover buffer warning
+            const remaining = rawStr.substring(bufferIndex);
+            if (remaining.length > 0) {
+                const safeRem = escapeHTML(remaining).replace(/\n/g, '\\n');
+                expEl.innerHTML += `<br><br><span class="text-amber-600 font-bold bg-amber-100 px-2 py-0.5 rounded border border-amber-300">DANGER:</span> Notice that <code class="text-amber-600 font-bold">"${safeRem}"</code> is still trapped inside the <code>stdin</code> buffer! The next time you call <code>scanf</code> or <code>fgets</code>, it will instantly read this leftover data instead of waiting for new user input.`;
+            } else {
+                expEl.innerHTML += `<br><br><span class="text-emerald-600 font-bold bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">SAFE:</span> The <code>stdin</code> buffer is completely empty.`;
+            }
+
+            await sleep(800);
+            el('io-code-pr2').classList.remove('active');
+
+            btnScanf.disabled = false;
+            btnFgets.disabled = false;
+        }
+
+        /* =========================================
+           SECTION 4: STRING.H FUNCTIONS
+           ========================================= */
+        function renderMiniRam(str, targetContainerId) {
+            const container = el(targetContainerId);
+            let cellsHTML = '';
+            
+            for(let i=0; i<15; i++) {
+                const isChar = i < str.length;
+                const isNull = i === str.length;
+                const val = isChar ? escapeHTML(str[i]) : (isNull ? '\\0' : '?');
+                const cssClass = isChar ? 'active' : (isNull ? 'null-char' : '');
+
+                cellsHTML += `
+                    <div class="ram-cell ${cssClass}">
+                        <div class="ram-idx text-[10px] opacity-70">${i}</div>
+                        <div class="ram-box w-8 h-8 text-sm">${val}</div>
+                    </div>
+                `;
+            }
+            container.innerHTML = cellsHTML;
+        }
+
+        function execStringFn(fnName, btnElement) {
+            // UI Button Active State
+            document.querySelectorAll('.fn-btn').forEach(btn => {
+                btn.classList.remove('bg-cyan-900', 'border-cyan-400');
+                btn.classList.add('bg-slate-800', 'border-slate-600');
+            });
+            btnElement.classList.remove('bg-slate-800', 'border-slate-600');
+            btnElement.classList.add('bg-cyan-900', 'border-cyan-400');
+
+            // Show result area
+            el('fn-placeholder').style.display = 'none';
+            const resArea = el('fn-result-area');
+            resArea.classList.remove('hidden', 'animate-fade-in');
+            void resArea.offsetWidth; // Reflow
+            resArea.classList.add('animate-fade-in');
+
+            const str1 = el('fn-str1').value;
+            const str2 = el('fn-str2').value;
+            
+            const retValEl = el('fn-return-val');
+            const memUpEl = el('fn-mem-update');
+            const expEl = el('fn-explanation');
+
+            memUpEl.classList.add('hidden'); // Reset
+
+            if (fnName === 'strlen') {
+                retValEl.textContent = str1.length;
+                expEl.innerHTML = `<code>strlen</code> counts characters until it hits the <code>\\0</code>. The <code>\\0</code> itself is NOT counted in the length.`;
+            } 
+            else if (fnName === 'strcpy') {
+                retValEl.textContent = `[Copied successfully]`;
+                expEl.innerHTML = `<code>strcpy</code> copies all characters from str2 (including its <code>\\0</code>) and overwrites str1.`;
+                
+                memUpEl.classList.remove('hidden');
+                renderMiniRam(str2, 'fn-str1-tape');
+                el('fn-str1').value = str2; // Sync UI
+            }
+            else if (fnName === 'strcat') {
+                // Buffer is 14 visible + 1 null = 15. Check overflow.
+                if ((str1.length + str2.length) >= 15) {
+                    retValEl.innerHTML = `<span class="text-rose-500">SEGMENTATION FAULT</span>`;
+                    expEl.innerHTML = `Buffer Overflow! str1 only has capacity for 15 characters. Appending str2 exceeds this memory.`;
+                } else {
+                    const newStr1 = str1 + str2;
+                    retValEl.textContent = `[Appended successfully]`;
+                    expEl.innerHTML = `<code>strcat</code> finds the <code>\\0</code> in str1, overwrites it with the first character of str2, and copies the rest, ending with a new <code>\\0</code>.`;
+                    
+                    memUpEl.classList.remove('hidden');
+                    renderMiniRam(newStr1, 'fn-str1-tape');
+                    el('fn-str1').value = newStr1; // Sync UI
+                }
+            }
+            else if (fnName === 'strcmp') {
+                let res = 0;
+                if (str1 === str2) res = 0;
+                else if (str1 < str2) res = -1;
+                else res = 1;
+
+                retValEl.textContent = res;
+                if (res === 0) expEl.innerHTML = `Returns <code>0</code> because str1 and str2 are exactly identical.`;
+                else if (res < 0) expEl.innerHTML = `Returns <code>${res}</code> because str1 comes alphabetically BEFORE str2 (based on ASCII values).`;
+                else expEl.innerHTML = `Returns <code>${res}</code> because str1 comes alphabetically AFTER str2 (based on ASCII values).`;
+            }
+        }
+
+    </script>
+</body>
+</html>

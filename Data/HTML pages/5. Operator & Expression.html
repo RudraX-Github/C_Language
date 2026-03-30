@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C Programming: Operators & Conversions Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            scroll-behavior: smooth;
+        }
+        
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes highlightPulse {
+            0% { background-color: rgba(59, 130, 246, 0.2); transform: scale(1); }
+            50% { background-color: rgba(59, 130, 246, 0.4); transform: scale(1.05); }
+            100% { background-color: rgba(59, 130, 246, 0.2); transform: scale(1); }
+        }
+
+        .eval-active {
+            animation: highlightPulse 1.5s infinite;
+            border-bottom: 3px solid #3b82f6;
+            font-weight: bold;
+            color: #1e3a8a;
+            border-radius: 4px;
+            padding: 0 4px;
+        }
+
+        .eval-done {
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        /* Type Colors */
+        .badge-int { background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+        .badge-float { background-color: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+        .badge-char { background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white p-4 shadow-md sticky top-0 z-50 border-b-4 border-amber-500">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i data-lucide="calculator" class="text-amber-400 w-8 h-8"></i>
+                <div>
+                    <h1 class="text-xl font-bold">C Operators Visualizer</h1>
+                    <p class="text-xs text-slate-400">Master Operators, Precedence, and Type Conversion</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex gap-4 text-sm font-medium text-slate-300 overflow-x-auto whitespace-nowrap px-2">
+                <a href="#section-operators" class="hover:text-white transition-colors">Types of Operators</a>
+                <a href="#section-precedence" class="hover:text-white transition-colors">Precedence</a>
+                <a href="#section-conversion" class="hover:text-white transition-colors">Type Conversion</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 w-full max-w-6xl mx-auto p-6 md:p-10 space-y-20 pb-32">
+        
+        <!-- ==========================================
+             SECTION 1: Types of Operators
+             ========================================== -->
+        <section id="section-operators" class="scroll-mt-24">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-4 flex items-center gap-3"><i data-lucide="code-2" class="text-blue-500 w-8 h-8"></i> 1. Types of Operators</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg">
+                    <p>Operators are special symbols used to perform operations on operands (variables and values). C has a rich set of built-in operators. A critical C-specific rule to remember: <b>Integer Division (<code class="bg-slate-200 px-1 rounded">/</code>) truncates the decimal</b>. <code class="bg-slate-200 px-1 rounded">5 / 2</code> is <code class="bg-slate-200 px-1 rounded">2</code>, not <code class="bg-slate-200 px-1 rounded">2.5</code>.</p>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col md:flex-row min-h-[450px]">
+                <!-- Navigation Tabs -->
+                <div class="bg-slate-50 md:w-64 border-b md:border-b-0 md:border-r border-slate-200 p-4 flex flex-row md:flex-col gap-2 overflow-x-auto">
+                    <button onclick="setOperatorGroup('arithmetic')" id="tab-op-arithmetic" class="op-tab flex-shrink-0 text-left px-4 py-3 rounded-lg font-bold bg-blue-100 text-blue-800 border-2 border-blue-400 transition-all flex justify-between items-center">Arithmetic <i data-lucide="plus-square" class="w-4 h-4"></i></button>
+                    <button onclick="setOperatorGroup('relational')" id="tab-op-relational" class="op-tab flex-shrink-0 text-left px-4 py-3 rounded-lg font-bold text-slate-600 hover:bg-slate-200 border-2 border-transparent transition-all flex justify-between items-center">Relational <i data-lucide="arrow-left-right" class="w-4 h-4"></i></button>
+                    <button onclick="setOperatorGroup('logical')" id="tab-op-logical" class="op-tab flex-shrink-0 text-left px-4 py-3 rounded-lg font-bold text-slate-600 hover:bg-slate-200 border-2 border-transparent transition-all flex justify-between items-center">Logical <i data-lucide="git-merge" class="w-4 h-4"></i></button>
+                    <button onclick="setOperatorGroup('bitwise')" id="tab-op-bitwise" class="op-tab flex-shrink-0 text-left px-4 py-3 rounded-lg font-bold text-slate-600 hover:bg-slate-200 border-2 border-transparent transition-all flex justify-between items-center">Bitwise <i data-lucide="binary" class="w-4 h-4"></i></button>
+                </div>
+
+                <!-- Interactive Playground Area -->
+                <div class="p-6 md:p-10 flex-1 flex flex-col bg-[#fafafa]">
+                    
+                    <div class="flex items-center justify-center gap-4 md:gap-8 mb-12">
+                        <!-- Operand A -->
+                        <div class="flex flex-col items-center">
+                            <label class="text-xs font-bold text-slate-500 uppercase mb-2">Operand A</label>
+                            <input type="number" id="op-a" value="5" oninput="calculateOperator()" class="w-20 md:w-24 text-center text-2xl font-bold py-3 border-2 border-slate-300 rounded-xl focus:border-blue-500 outline-none code-font shadow-inner">
+                        </div>
+
+                        <!-- Operator Selection -->
+                        <div class="flex flex-col items-center">
+                            <label class="text-xs font-bold text-slate-500 uppercase mb-2">Operator</label>
+                            <select id="op-select" onchange="calculateOperator()" class="appearance-none bg-blue-600 text-white text-3xl font-bold py-2 px-6 rounded-xl cursor-pointer text-center code-font outline-none hover:bg-blue-700 shadow-lg shadow-blue-500/30 text-center w-24">
+                                <!-- Options injected by JS -->
+                            </select>
+                        </div>
+
+                        <!-- Operand B -->
+                        <div class="flex flex-col items-center">
+                            <label class="text-xs font-bold text-slate-500 uppercase mb-2">Operand B</label>
+                            <input type="number" id="op-b" value="2" oninput="calculateOperator()" class="w-20 md:w-24 text-center text-2xl font-bold py-3 border-2 border-slate-300 rounded-xl focus:border-blue-500 outline-none code-font shadow-inner">
+                        </div>
+                    </div>
+
+                    <!-- Result Area -->
+                    <div class="mt-auto bg-white border border-slate-200 rounded-xl p-6 shadow-sm text-center relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Evaluates To</h4>
+                        
+                        <div class="flex flex-col items-center gap-2">
+                            <div id="op-result" class="text-5xl font-bold text-slate-800 code-font">2</div>
+                            <div id="op-result-type" class="text-xs font-bold badge-int px-2 py-1 rounded-md uppercase tracking-wide">Type: int</div>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-slate-100">
+                            <div class="flex items-start gap-2 text-left bg-blue-50 p-4 rounded-lg text-sm text-blue-900 border border-blue-100">
+                                <i data-lucide="info" class="w-5 h-5 flex-shrink-0 text-blue-600 mt-0.5"></i>
+                                <span id="op-explanation">Integer division truncates the decimal part. 5 divided by 2 is 2.5, but C chops off the .5.</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Bitwise Binary Visualization (Hidden by default) -->
+                        <div id="bitwise-viz" class="hidden mt-4 bg-slate-800 rounded-lg p-4 font-mono text-sm text-green-400 text-left border border-slate-700 shadow-inner">
+                            <div class="flex justify-between w-full max-w-[250px] mx-auto"><span>A:</span> <span id="bit-a">0000 0101</span></div>
+                            <div class="flex justify-between w-full max-w-[250px] mx-auto border-b border-slate-600 pb-1 mb-1"><span>B:</span> <span id="bit-b">0000 0010</span></div>
+                            <div class="flex justify-between w-full max-w-[250px] mx-auto font-bold text-white"><span>R:</span> <span id="bit-r">0000 0000</span></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <hr class="border-slate-200">
+
+        <!-- ==========================================
+             SECTION 2: Precedence & Associativity
+             ========================================== -->
+        <section id="section-precedence" class="scroll-mt-24">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-4 flex items-center gap-3"><i data-lucide="list-ordered" class="text-purple-500 w-8 h-8"></i> 2. Operator Precedence</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg">
+                    <p>When an expression has multiple operators, C needs rules to decide which operation to perform first. This is called <b>Precedence</b> (like BODMAS/PEMDAS in math). If operators have the <i>same</i> precedence, <b>Associativity</b> determines the direction (Left-to-Right or Right-to-Left).</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Selectors -->
+                <div class="flex flex-col gap-4">
+                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-slate-800 mb-4">Select an expression to evaluate:</h3>
+                        <div class="space-y-3">
+                            <button onclick="loadExpression(0)" class="prec-btn w-full text-left px-4 py-3 rounded-lg border-2 border-purple-500 bg-purple-50 text-purple-900 font-mono font-bold transition-all shadow-sm">
+                                5 + 3 * 2
+                            </button>
+                            <button onclick="loadExpression(1)" class="prec-btn w-full text-left px-4 py-3 rounded-lg border-2 border-slate-200 text-slate-600 hover:border-purple-300 hover:bg-purple-50 transition-all font-mono font-bold">
+                                10 - 4 - 2
+                            </button>
+                            <button onclick="loadExpression(2)" class="prec-btn w-full text-left px-4 py-3 rounded-lg border-2 border-slate-200 text-slate-600 hover:border-purple-300 hover:bg-purple-50 transition-all font-mono font-bold">
+                                8 + 6 / 2 * 3
+                            </button>
+                            <button onclick="loadExpression(3)" class="prec-btn w-full text-left px-4 py-3 rounded-lg border-2 border-slate-200 text-slate-600 hover:border-purple-300 hover:bg-purple-50 transition-all font-mono font-bold">
+                                a = b = 5
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-purple-50 border border-purple-200 rounded-xl p-5 shadow-sm text-sm text-purple-900">
+                        <h4 class="font-bold mb-2 flex items-center gap-2"><i data-lucide="book" class="w-4 h-4"></i> Core Rules</h4>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li><code class="font-bold">*</code>, <code class="font-bold">/</code>, <code class="font-bold">%</code> run before <code class="font-bold">+</code>, <code class="font-bold">-</code></li>
+                            <li>Arithmetic operators associate <b>Left-to-Right</b>.</li>
+                            <li>Assignment operators (<code class="font-bold">=</code>) associate <b>Right-to-Left</b>.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Visualizer -->
+                <div class="bg-[#1e1e1e] rounded-xl shadow-xl border border-slate-700 flex flex-col overflow-hidden">
+                    <div class="bg-[#2d2d2d] px-4 py-3 border-b border-black flex justify-between items-center">
+                        <span class="text-slate-300 text-xs font-mono font-bold">Expression Evaluator</span>
+                        <div class="flex gap-2">
+                            <button onclick="resetEvaluation()" class="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white rounded text-xs transition-colors"><i data-lucide="rotate-ccw" class="w-3 h-3"></i></button>
+                            <button id="btn-step" onclick="stepEvaluation()" class="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-bold transition-colors shadow">Step Forward <i data-lucide="chevron-right" class="w-3 h-3 inline"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-8 flex-1 flex flex-col items-center justify-center min-h-[300px] relative">
+                        <div id="eval-display" class="text-4xl md:text-5xl font-mono text-white tracking-widest leading-loose text-center transition-all duration-300">
+                            <!-- Expression injected here -->
+                            5 + <span class="eval-active">3 * 2</span>
+                        </div>
+                        
+                        <div id="eval-log" class="absolute bottom-0 left-0 w-full bg-slate-900/80 p-4 border-t border-slate-700 code-font text-sm text-slate-300 h-24 overflow-y-auto">
+                            <!-- Log steps injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <hr class="border-slate-200">
+
+        <!-- ==========================================
+             SECTION 3: Type Conversion (Casting)
+             ========================================== -->
+        <section id="section-conversion" class="scroll-mt-24">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-4 flex items-center gap-3"><i data-lucide="shuffle" class="text-emerald-500 w-8 h-8"></i> 3. Type Conversion (Casting)</h2>
+                <div class="prose prose-slate max-w-none text-slate-600 text-lg">
+                    <p>What happens when you mix different data types (like adding an <code class="bg-slate-200 px-1 rounded">int</code> to a <code class="bg-slate-200 px-1 rounded">float</code>)? C performs <b>Type Conversion</b>. There are two types: <b>Implicit</b> (Automatic Promotion by the compiler to prevent data loss) and <b>Explicit</b> (Forced casting by the programmer, which can lead to data loss).</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Scenarios Sidebar -->
+                <div class="lg:col-span-1 bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col gap-2">
+                    <h3 class="font-bold text-slate-800 mb-2 border-b border-slate-100 pb-2">Scenarios</h3>
+                    <button onclick="loadCastScenario(0)" id="cast-btn-0" class="text-left px-3 py-2 rounded-lg text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 transition-colors">1. int + float (Implicit)</button>
+                    <button onclick="loadCastScenario(1)" id="cast-btn-1" class="text-left px-3 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 border border-transparent transition-colors">2. char + int (Implicit)</button>
+                    <button onclick="loadCastScenario(2)" id="cast-btn-2" class="text-left px-3 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 border border-transparent transition-colors">3. float → int (Explicit)</button>
+                    <button onclick="loadCastScenario(3)" id="cast-btn-3" class="text-left px-3 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 border border-transparent transition-colors">4. Data Loss (Explicit)</button>
+                </div>
+
+                <!-- Visualization Area -->
+                <div class="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-6 md:p-10 shadow-sm flex flex-col">
+                    
+                    <div class="relative w-full min-h-[300px] flex items-center justify-center gap-4 md:gap-12 bg-slate-50 rounded-2xl border border-slate-200 p-8 mb-8 overflow-hidden">
+                        
+                        <!-- Left Operand -->
+                        <div class="flex flex-col items-center z-10 w-28">
+                            <span id="cast-left-lbl" class="text-xs font-bold text-slate-500 uppercase mb-2">int</span>
+                            <div id="cast-left-box" class="w-24 h-24 bg-blue-100 border-2 border-blue-400 rounded-xl shadow-md flex flex-col items-center justify-center text-3xl font-mono font-bold text-blue-800 relative transition-all duration-700">
+                                <span id="cast-left-val">5</span>
+                            </div>
+                            <span id="cast-left-size" class="text-[10px] font-bold text-slate-400 uppercase mt-2">4 Bytes</span>
+                        </div>
+
+                        <!-- Operator / Action -->
+                        <div class="flex flex-col items-center z-10 px-2">
+                            <div id="cast-op" class="w-12 h-12 bg-slate-800 text-white rounded-full flex items-center justify-center text-2xl font-bold shadow-lg z-20">
+                                +
+                            </div>
+                            <button id="cast-action-btn" onclick="runConversion()" class="mt-8 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-bold shadow-md flex items-center gap-2 transition-colors">
+                                Execute <i data-lucide="play" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <!-- Right Operand -->
+                        <div class="flex flex-col items-center z-10 w-28">
+                            <span id="cast-right-lbl" class="text-xs font-bold text-slate-500 uppercase mb-2">float</span>
+                            <div id="cast-right-box" class="w-24 h-24 bg-purple-100 border-2 border-purple-400 rounded-xl shadow-md flex flex-col items-center justify-center text-3xl font-mono font-bold text-purple-800 transition-all duration-700 relative">
+                                <span id="cast-right-val">2.5</span>
+                            </div>
+                            <span id="cast-right-size" class="text-[10px] font-bold text-slate-400 uppercase mt-2">4 Bytes</span>
+                        </div>
+
+                        <!-- Result Destination Overlay -->
+                        <div id="cast-result-overlay" class="absolute inset-0 bg-white/95 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500 z-30">
+                            <div class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Evaluates To</div>
+                            <div id="cast-final-val" class="text-6xl font-mono font-bold text-emerald-600 mb-4 scale-50 transition-transform duration-500">7.5</div>
+                            <div class="flex gap-2 items-center">
+                                <div id="cast-final-type" class="badge-float px-3 py-1 rounded text-sm font-bold uppercase tracking-wide">Type: float</div>
+                                <div id="cast-final-size" class="bg-slate-200 text-slate-600 px-3 py-1 rounded text-sm font-bold uppercase tracking-wide">4 Bytes</div>
+                            </div>
+                            <button onclick="resetConversion()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 pointer-events-auto transition-colors"><i data-lucide="rotate-ccw" class="w-6 h-6"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Explanation Text -->
+                    <div class="bg-emerald-50 border border-emerald-200 p-5 rounded-xl flex gap-4 mt-auto">
+                        <i data-lucide="info" class="w-6 h-6 text-emerald-600 flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            <h4 id="cast-exp-title" class="font-bold text-emerald-900 mb-1 text-lg">Implicit Promotion</h4>
+                            <p id="cast-exp-desc" class="text-sm text-emerald-800 leading-relaxed">When adding an <code class="font-mono bg-emerald-200 px-1 rounded">int</code> and a <code class="font-mono bg-emerald-200 px-1 rounded">float</code>, C automatically "promotes" the integer to a float behind the scenes to avoid losing precision. So <code class="font-mono">5</code> becomes <code class="font-mono">5.0</code>, and the result is a <code class="font-mono">float</code>.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        /* =========================================
+           SECTION 1: OPERATORS PLAYGROUND LOGIC
+           ========================================= */
+        
+        const operatorGroups = {
+            'arithmetic': [
+                { val: '+', label: '+' }, { val: '-', label: '-' }, 
+                { val: '*', label: '*' }, { val: '/', label: '/' }, { val: '%', label: '%' }
+            ],
+            'relational': [
+                { val: '==', label: '==' }, { val: '!=', label: '!=' }, 
+                { val: '>', label: '>' }, { val: '<', label: '<' },
+                { val: '>=', label: '>=' }, { val: '<=', label: '<=' }
+            ],
+            'logical': [
+                { val: '&&', label: '&&' }, { val: '||', label: '||' }
+            ],
+            'bitwise': [
+                { val: '&', label: '& (AND)' }, { val: '|', label: '| (OR)' }, 
+                { val: '^', label: '^ (XOR)' }, { val: '<<', label: '<< (Left Shift)' }
+            ]
+        };
+
+        let currentOpGroup = 'arithmetic';
+
+        function setOperatorGroup(group) {
+            currentOpGroup = group;
+            
+            // UI Tabs Reset
+            document.querySelectorAll('.op-tab').forEach(btn => {
+                btn.className = 'op-tab flex-shrink-0 text-left px-4 py-3 rounded-lg font-bold text-slate-600 hover:bg-slate-200 border-2 border-transparent transition-all flex justify-between items-center';
+            });
+            const activeTab = document.getElementById(`tab-op-${group}`);
+            activeTab.className = 'op-tab flex-shrink-0 text-left px-4 py-3 rounded-lg font-bold bg-blue-100 text-blue-800 border-2 border-blue-400 transition-all flex justify-between items-center';
+
+            // Populate Dropdown
+            const select = document.getElementById('op-select');
+            select.innerHTML = '';
+            operatorGroups[group].forEach(op => {
+                const opt = document.createElement('option');
+                opt.value = op.val;
+                opt.textContent = op.label;
+                select.appendChild(opt);
+            });
+
+            // Adjust inputs based on group
+            const opA = document.getElementById('op-a');
+            const opB = document.getElementById('op-b');
+            const bitwiseViz = document.getElementById('bitwise-viz');
+
+            if (group === 'logical') {
+                opA.value = "1"; opB.value = "0";
+                bitwiseViz.classList.add('hidden');
+            } else if (group === 'bitwise') {
+                opA.value = "5"; opB.value = "2";
+                bitwiseViz.classList.remove('hidden');
+            } else {
+                opA.value = "5"; opB.value = "2";
+                bitwiseViz.classList.add('hidden');
+            }
+
+            calculateOperator();
+        }
+
+        function to8BitBinary(num) {
+            // Convert to 8-bit binary string representation
+            let bin = (num >>> 0).toString(2);
+            bin = bin.length > 8 ? bin.substring(bin.length - 8) : bin.padStart(8, '0');
+            return bin.substring(0,4) + ' ' + bin.substring(4);
+        }
+
+        function calculateOperator() {
+            const op = document.getElementById('op-select').value;
+            // Parse as floats to handle potential float inputs, though C bitwise requires ints
+            let a = parseFloat(document.getElementById('op-a').value);
+            let b = parseFloat(document.getElementById('op-b').value);
+            
+            if (isNaN(a)) a = 0;
+            if (isNaN(b)) b = 0;
+
+            const resEl = document.getElementById('op-result');
+            const typeEl = document.getElementById('op-result-type');
+            const expEl = document.getElementById('op-explanation');
+            
+            let result = 0;
+            let type = 'int';
+            let explanation = '';
+
+            try {
+                if (currentOpGroup === 'arithmetic') {
+                    // Implicit casting logic for visualizer
+                    if (!Number.isInteger(a) || !Number.isInteger(b)) type = 'float';
+
+                    switch(op) {
+                        case '+': result = a + b; explanation = "Standard addition."; break;
+                        case '-': result = a - b; explanation = "Standard subtraction."; break;
+                        case '*': result = a * b; explanation = "Standard multiplication."; break;
+                        case '/': 
+                            if(b === 0) { result = "Error"; explanation = "Division by zero is undefined."; break; }
+                            result = a / b;
+                            if (type === 'int') {
+                                result = Math.trunc(result); // C truncates integer division
+                                explanation = "Integer division truncates the decimal part. C chops off anything after the decimal point.";
+                            } else {
+                                explanation = "Since one operand is a float, float division occurs, preserving the decimal.";
+                                result = result.toFixed(2);
+                            }
+                            break;
+                        case '%':
+                            if(b === 0) { result = "Error"; break; }
+                            result = Math.trunc(a) % Math.trunc(b);
+                            type = 'int';
+                            explanation = "Modulo operator returns the remainder of an integer division. Only works with ints in C.";
+                            break;
+                    }
+                } 
+                else if (currentOpGroup === 'relational') {
+                    type = 'int'; // C returns 1 or 0 for true/false
+                    switch(op) {
+                        case '==': result = a === b ? 1 : 0; break;
+                        case '!=': result = a !== b ? 1 : 0; break;
+                        case '>': result = a > b ? 1 : 0; break;
+                        case '<': result = a < b ? 1 : 0; break;
+                        case '>=': result = a >= b ? 1 : 0; break;
+                        case '<=': result = a <= b ? 1 : 0; break;
+                    }
+                    explanation = `Relational operators evaluate to 1 (True) or 0 (False) in C. C does not have a native boolean type like Python.`;
+                }
+                else if (currentOpGroup === 'logical') {
+                    type = 'int';
+                    // In C, 0 is false, anything else is true.
+                    const isATrue = a !== 0;
+                    const isBTrue = b !== 0;
+                    switch(op) {
+                        case '&&': result = (isATrue && isBTrue) ? 1 : 0; explanation = "Logical AND: Returns 1 if BOTH operands are non-zero (true)."; break;
+                        case '||': result = (isATrue || isBTrue) ? 1 : 0; explanation = "Logical OR: Returns 1 if AT LEAST ONE operand is non-zero (true)."; break;
+                    }
+                }
+                else if (currentOpGroup === 'bitwise') {
+                    type = 'int';
+                    // Bitwise requires integers
+                    const intA = Math.trunc(a);
+                    const intB = Math.trunc(b);
+                    switch(op) {
+                        case '&': result = intA & intB; explanation = "Bitwise AND: Compares each bit. Returns 1 only if both bits are 1."; break;
+                        case '|': result = intA | intB; explanation = "Bitwise OR: Compares each bit. Returns 1 if at least one bit is 1."; break;
+                        case '^': result = intA ^ intB; explanation = "Bitwise XOR: Returns 1 if bits are different, 0 if they are the same."; break;
+                        case '<<': result = intA << intB; explanation = "Left Shift: Shifts bits of A to the left by B positions, filling with 0s. Mathematically multiplies by 2^B."; break;
+                    }
+
+                    // Update Bitwise Viz
+                    document.getElementById('bit-a').innerText = to8BitBinary(intA);
+                    document.getElementById('bit-b').innerText = op === '<<' ? `Shift ${intB}` : to8BitBinary(intB);
+                    document.getElementById('bit-r').innerText = to8BitBinary(result);
+                }
+
+            } catch (e) {
+                result = "Error";
+            }
+
+            // UI Updates
+            resEl.innerText = result;
+            expEl.innerText = explanation;
+            
+            if (result === "Error") {
+                typeEl.style.display = 'none';
+            } else {
+                typeEl.style.display = 'inline-block';
+                typeEl.innerText = `Type: ${type}`;
+                typeEl.className = `text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wide badge-${type}`;
+            }
+        }
+
+        // Init section 1
+        setOperatorGroup('arithmetic');
+
+        /* =========================================
+           SECTION 2: PRECEDENCE LOGIC
+           ========================================= */
+        const exprData = [
+            {
+                base: "5 + 3 * 2",
+                steps: [
+                    { highlight: "3 * 2", res: "6", newExpr: "5 + 6", log: "Multiplication (*) has higher precedence than Addition (+)." },
+                    { highlight: "5 + 6", res: "11", newExpr: "11", log: "Evaluate Addition (+)." }
+                ]
+            },
+            {
+                base: "10 - 4 - 2",
+                steps: [
+                    { highlight: "10 - 4", res: "6", newExpr: "6 - 2", log: "Subtraction has Left-to-Right associativity. Evaluate first (-) left." },
+                    { highlight: "6 - 2", res: "4", newExpr: "4", log: "Evaluate remaining Subtraction (-)." }
+                ]
+            },
+            {
+                base: "8 + 6 / 2 * 3",
+                steps: [
+                    { highlight: "6 / 2", res: "3", newExpr: "8 + 3 * 3", log: "(/) and (*) have same precedence. Left-to-Right associativity applies. Evaluate (/) first." },
+                    { highlight: "3 * 3", res: "9", newExpr: "8 + 9", log: "Evaluate Multiplication (*)." },
+                    { highlight: "8 + 9", res: "17", newExpr: "17", log: "Evaluate Addition (+)." }
+                ]
+            },
+            {
+                base: "a = b = 5",
+                steps: [
+                    { highlight: "b = 5", res: "(b gets 5)", newExpr: "a = (5)", log: "Assignment (=) has Right-to-Left associativity! 'b' is assigned 5 first." },
+                    { highlight: "a = (5)", res: "(a gets 5)", newExpr: "Variables updated.", log: "'a' is assigned the result of the previous assignment." }
+                ]
+            }
+        ];
+
+        let currentExprIdx = 0;
+        let currentStep = 0;
+
+        function loadExpression(idx) {
+            currentExprIdx = idx;
+            currentStep = 0;
+            
+            // Update Buttons
+            document.querySelectorAll('.prec-btn').forEach((btn, i) => {
+                if (i === idx) {
+                    btn.className = "prec-btn w-full text-left px-4 py-3 rounded-lg border-2 border-purple-500 bg-purple-50 text-purple-900 font-mono font-bold transition-all shadow-sm";
+                } else {
+                    btn.className = "prec-btn w-full text-left px-4 py-3 rounded-lg border-2 border-slate-200 text-slate-600 hover:border-purple-300 hover:bg-purple-50 transition-all font-mono font-bold";
+                }
+            });
+
+            resetEvaluation();
+        }
+
+        function resetEvaluation() {
+            currentStep = 0;
+            const data = exprData[currentExprIdx];
+            const display = document.getElementById('eval-display');
+            
+            // Highlight first step sub-expression
+            const firstStep = data.steps[0];
+            const html = data.base.replace(firstStep.highlight, `<span class="eval-active">${firstStep.highlight}</span>`);
+            display.innerHTML = html;
+            display.className = "text-4xl md:text-5xl font-mono text-white tracking-widest leading-loose text-center transition-all duration-300";
+            
+            document.getElementById('eval-log').innerHTML = '';
+            document.getElementById('btn-step').disabled = false;
+            document.getElementById('btn-step').classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        function stepEvaluation() {
+            const data = exprData[currentExprIdx];
+            if (currentStep >= data.steps.length) return;
+
+            const stepData = data.steps[currentStep];
+            const display = document.getElementById('eval-display');
+            const log = document.getElementById('eval-log');
+
+            // Add to Log
+            const logEntry = document.createElement('div');
+            logEntry.className = 'mb-2 animate-fade-in border-l-2 border-purple-500 pl-2';
+            logEntry.innerHTML = `<span class="text-purple-400 font-bold">Step ${currentStep + 1}:</span> ${stepData.log} <br> <span class="text-slate-400 text-xs">${stepData.highlight} &rarr; ${stepData.res}</span>`;
+            log.prepend(logEntry);
+
+            currentStep++;
+
+            // Update Display for next step
+            if (currentStep < data.steps.length) {
+                const nextStep = data.steps[currentStep];
+                // Regex to replace exactly the next highlight in the new expression
+                const html = stepData.newExpr.replace(nextStep.highlight, `<span class="eval-active">${nextStep.highlight}</span>`);
+                display.innerHTML = html;
+            } else {
+                // Finished
+                display.innerHTML = `<span class="eval-done text-6xl">${stepData.newExpr}</span>`;
+                document.getElementById('btn-step').disabled = true;
+                document.getElementById('btn-step').classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // Init Precedence
+        loadExpression(0);
+
+        /* =========================================
+           SECTION 3: TYPE CONVERSION LOGIC
+           ========================================= */
+        const castScenarios = [
+            {
+                id: 0, title: "Implicit Promotion", mode: "implicit",
+                leftVal: "5", leftType: "int", leftSize: "4 Bytes",
+                op: "+",
+                rightVal: "2.5", rightType: "float", rightSize: "4 Bytes",
+                resVal: "7.5", resType: "float", resSize: "4 Bytes",
+                midVal: "5.0", midType: "float", midSize: "4 Bytes",
+                descTitle: "Implicit Float Promotion",
+                desc: "When combining an <code>int</code> and a <code>float</code>, C automatically \"promotes\" the integer to a float behind the scenes to avoid losing precision. The <code>int</code> 5 becomes <code>5.0</code> before the addition occurs."
+            },
+            {
+                id: 1, title: "Integer Promotion", mode: "implicit",
+                leftVal: "'A'", leftType: "char", leftSize: "1 Byte",
+                op: "+",
+                rightVal: "10", rightType: "int", rightSize: "4 Bytes",
+                resVal: "75", resType: "int", resSize: "4 Bytes",
+                midVal: "65", midType: "int", midSize: "4 Bytes",
+                descTitle: "Integer Promotion (ASCII)",
+                desc: "Characters in C are stored as integers (ASCII values). Before adding a <code>char</code> (1 byte) to an <code>int</code> (4 bytes), C promotes the character to an integer. 'A' becomes 65."
+            },
+            {
+                id: 2, title: "Explicit Truncation", mode: "explicit",
+                leftVal: "(int)", leftType: "cast", leftSize: "Action",
+                op: "→",
+                rightVal: "9.99", rightType: "float", rightSize: "4 Bytes",
+                resVal: "9", resType: "int", resSize: "4 Bytes",
+                midVal: "", midType: "", midSize: "",
+                descTitle: "Explicit Cast (Truncation)",
+                desc: "By putting <code>(int)</code> before a float, we force the compiler to convert it to an integer. C does NOT round to the nearest whole number; it strictly <b>truncates</b> (chops off) the decimal part."
+            },
+            {
+                id: 3, title: "Data Loss / Overflow", mode: "explicit",
+                leftVal: "(char)", leftType: "cast", leftSize: "Action",
+                op: "→",
+                rightVal: "300", rightType: "int", rightSize: "4 Bytes",
+                resVal: "44", resType: "char", resSize: "1 Byte",
+                midVal: "", midType: "", midSize: "",
+                descTitle: "Integer Overflow (Data Loss)",
+                desc: "A <code>char</code> (1 Byte) can only hold values from -128 to 127 (or 0-255 unsigned). Forcing a 300 into a char causes an overflow. It wraps around (300 % 256 = 44), which corresponds to the ASCII character ','."
+            }
+        ];
+
+        let currentCastIdx = 0;
+
+        function getTypeStyles(type) {
+            if (type === 'int') return 'bg-blue-100 border-blue-400 text-blue-800';
+            if (type === 'float') return 'bg-purple-100 border-purple-400 text-purple-800';
+            if (type === 'char') return 'bg-emerald-100 border-emerald-400 text-emerald-800';
+            return 'bg-slate-100 border-slate-400 text-slate-600'; // cast
+        }
+
+        function getBadgeClass(type) {
+            if (type === 'int') return 'badge-int';
+            if (type === 'float') return 'badge-float';
+            if (type === 'char') return 'badge-char';
+            return 'bg-slate-200 text-slate-800';
+        }
+
+        function loadCastScenario(idx) {
+            currentCastIdx = idx;
+            const data = castScenarios[idx];
+
+            // Update sidebar buttons
+            document.querySelectorAll('[id^="cast-btn-"]').forEach((btn, i) => {
+                if (i === idx) {
+                    btn.className = "text-left px-3 py-2 rounded-lg text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 transition-colors";
+                } else {
+                    btn.className = "text-left px-3 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 border border-transparent transition-colors";
+                }
+            });
+
+            resetConversion();
+
+            // Populate text/labels
+            document.getElementById('cast-left-lbl').innerText = data.leftType;
+            document.getElementById('cast-left-val').innerHTML = data.leftType === 'cast' ? `<span class="text-xl">${data.leftVal}</span>` : data.leftVal;
+            document.getElementById('cast-left-size').innerText = data.leftSize;
+            
+            document.getElementById('cast-op').innerText = data.op;
+
+            document.getElementById('cast-right-lbl').innerText = data.rightType;
+            document.getElementById('cast-right-val').innerText = data.rightVal;
+            document.getElementById('cast-right-size').innerText = data.rightSize;
+
+            document.getElementById('cast-exp-title').innerText = data.descTitle;
+            document.getElementById('cast-exp-desc').innerHTML = data.desc;
+
+            // Apply base colors
+            const leftBox = document.getElementById('cast-left-box');
+            leftBox.className = `w-24 h-24 border-2 rounded-xl shadow-md flex flex-col items-center justify-center text-3xl font-mono font-bold relative transition-all duration-700 ${getTypeStyles(data.leftType)}`;
+            
+            const rightBox = document.getElementById('cast-right-box');
+            rightBox.className = `w-24 h-24 border-2 rounded-xl shadow-md flex flex-col items-center justify-center text-3xl font-mono font-bold transition-all duration-700 relative ${getTypeStyles(data.rightType)}`;
+        }
+
+        function runConversion() {
+            const data = castScenarios[currentCastIdx];
+            const btn = document.getElementById('cast-action-btn');
+            btn.disabled = true;
+
+            const leftBox = document.getElementById('cast-left-box');
+            const leftVal = document.getElementById('cast-left-val');
+            const leftSize = document.getElementById('cast-left-size');
+            
+            const rightBox = document.getElementById('cast-right-box');
+            const rightVal = document.getElementById('cast-right-val');
+            
+            const overlay = document.getElementById('cast-result-overlay');
+            const finalVal = document.getElementById('cast-final-val');
+            const finalType = document.getElementById('cast-final-type');
+            const finalSize = document.getElementById('cast-final-size');
+
+            if (data.mode === 'implicit') {
+                // Animate left box transforming to match right box's type/level
+                leftBox.className = `w-24 h-24 border-2 rounded-xl shadow-md flex flex-col items-center justify-center text-3xl font-mono font-bold relative transition-all duration-700 ${getTypeStyles(data.midType)} transform scale-110`;
+                
+                setTimeout(() => {
+                    leftVal.innerText = data.midVal;
+                    leftSize.innerText = data.midSize;
+                    document.getElementById('cast-left-lbl').innerText = data.midType;
+                }, 350);
+
+                setTimeout(() => {
+                    overlay.style.opacity = '1';
+                    overlay.style.pointerEvents = 'auto';
+                    finalVal.innerText = data.resVal;
+                    finalVal.style.transform = 'scale(1)';
+                    finalType.className = `${getBadgeClass(data.resType)} px-3 py-1 rounded text-sm font-bold uppercase tracking-wide`;
+                    finalType.innerText = `Type: ${data.resType}`;
+                    finalSize.innerText = data.resSize;
+                }, 1300);
+
+            } else {
+                // Animate explicit cast smashing the right operand
+                leftBox.classList.add('scale-90');
+                
+                rightBox.className = `w-24 h-24 border-2 rounded-xl shadow-md flex flex-col items-center justify-center text-3xl font-mono font-bold transition-all duration-700 relative ${getTypeStyles(data.resType)} transform scale-90`;
+
+                setTimeout(() => {
+                    rightVal.innerText = data.resVal;
+                    document.getElementById('cast-right-lbl').innerText = data.resType;
+                    document.getElementById('cast-right-size').innerText = data.resSize;
+                }, 350);
+
+                setTimeout(() => {
+                    overlay.style.opacity = '1';
+                    overlay.style.pointerEvents = 'auto';
+                    finalVal.innerText = data.resVal;
+                    finalVal.style.transform = 'scale(1)';
+                    finalType.className = `${getBadgeClass(data.resType)} px-3 py-1 rounded text-sm font-bold uppercase tracking-wide`;
+                    finalType.innerText = `Type: ${data.resType}`;
+                    finalSize.innerText = data.resSize;
+                }, 1300);
+            }
+        }
+
+        function resetConversion() {
+            const data = castScenarios[currentCastIdx];
+            const btn = document.getElementById('cast-action-btn');
+            btn.disabled = false;
+
+            const overlay = document.getElementById('cast-result-overlay');
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+            
+            const finalVal = document.getElementById('cast-final-val');
+            finalVal.style.transform = 'scale(0.5)';
+
+            // Re-apply original styles and values
+            const leftBox = document.getElementById('cast-left-box');
+            leftBox.className = `w-24 h-24 border-2 rounded-xl shadow-md flex flex-col items-center justify-center text-3xl font-mono font-bold relative transition-all duration-700 ${getTypeStyles(data.leftType)}`;
+            document.getElementById('cast-left-val').innerHTML = data.leftType === 'cast' ? `<span class="text-xl">${data.leftVal}</span>` : data.leftVal;
+            document.getElementById('cast-left-lbl').innerText = data.leftType;
+            document.getElementById('cast-left-size').innerText = data.leftSize;
+
+            const rightBox = document.getElementById('cast-right-box');
+            rightBox.className = `w-24 h-24 border-2 rounded-xl shadow-md flex flex-col items-center justify-center text-3xl font-mono font-bold transition-all duration-700 relative ${getTypeStyles(data.rightType)}`;
+            document.getElementById('cast-right-val').innerText = data.rightVal;
+            document.getElementById('cast-right-lbl').innerText = data.rightType;
+            document.getElementById('cast-right-size').innerText = data.rightSize;
+        }
+
+        // Init section 3
+        loadCastScenario(0);
+    </script>
+</body>
+</html>

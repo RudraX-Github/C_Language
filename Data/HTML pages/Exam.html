@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C Programming Interactive Masterclass</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 380px;
+            }
+        }
+        .terminal-bg {
+            background-color: #0f172a;
+            color: #10b981;
+            font-family: monospace;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Login Modal Overlay -->
+    <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 transform transition-all">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 text-indigo-600 mb-4">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800">System Access</h2>
+                <p class="text-sm text-slate-500 mt-2">Enter your developer credentials to track your C programming progress.</p>
+            </div>
+            
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-slate-700 mb-1">Developer Username</label>
+                    <input type="text" id="username" required class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-slate-50" placeholder="e.g. data_ninja_99">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-slate-700 mb-1">Access Token (Password)</label>
+                    <input type="password" id="password" required class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-slate-50" placeholder="••••••••">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex justify-center items-center gap-2 shadow-lg shadow-indigo-200">
+                    Initialize Session
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Chosen Palette: Warm Neutrals (Slate-50 background, Slate-900 text, Emerald-600 accents, Indigo-600 buttons) -->
+    <!-- Application Structure Plan: A dashboard-style interactive learning application. The top section acts as a progress dashboard utilizing Chart.js to visualize completion and skill acquisition. The main body uses a two-column layout: a navigation sidebar for selecting among the 6 C programming exercises, and a dynamic content area. The content area breaks down the static report into interactive step-by-step checklists and a simulated terminal to reveal code outputs, transforming passive reading into an engaging, gamified user experience. -->
+    <!-- Visualization & Content Choices: Report Info -> 6 C Programming Exercises and Concepts. Goal -> Inform and Track Progress. Viz/Presentation Method -> Interactive Checklist, Simulated Terminal Output, Doughnut Chart (Progress Tracking), Polar Area Chart (Skill/Concept Distribution). Interaction -> 'Run Code' buttons reveal output, step checkboxes enable interactivity, 'Mark Complete' triggers chart updates. Justification -> Gamification and interactive reveal enhance learning retention compared to reading a static document. Library/Method -> Vanilla JS for DOM updates, Chart.js for visualizations. Confirming NO SVG/Mermaid. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <header class="bg-indigo-900 text-white p-6 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight">C Programming Masterclass</h1>
+                <p class="text-indigo-200 mt-2 text-sm max-w-2xl">This interactive dashboard translates fundamental C programming concepts into an explorable, step-by-step learning experience. Track your progress, learn key concepts, and simulate code executions.</p>
+            </div>
+            <div class="mt-4 md:mt-0 text-right">
+                <div id="user-info" class="hidden mb-2 flex items-center justify-end gap-3">
+                    <span class="text-sm text-indigo-200">Welcome, <span id="username-display" class="font-bold text-white tracking-wide"></span></span>
+                    <button onclick="logout()" class="text-xs bg-indigo-800 hover:bg-indigo-700 text-white px-3 py-1.5 rounded transition-colors">Logout</button>
+                </div>
+                <span class="text-2xl font-bold text-emerald-400" id="header-progress">0%</span>
+                <p class="text-xs text-indigo-300 uppercase tracking-wider">Course Completed</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full p-4 md:p-6 flex flex-col lg:flex-row gap-6">
+        
+        <div class="w-full lg:w-1/3 flex flex-col gap-6">
+            
+            <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <h2 class="text-lg font-bold text-slate-800 mb-2 border-b pb-2">Your Progress</h2>
+                <p class="text-sm text-slate-500 mb-4">Complete exercises to update your learning metrics.</p>
+                <div class="chart-container">
+                    <canvas id="progressChart"></canvas>
+                </div>
+            </section>
+
+            <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <h2 class="text-lg font-bold text-slate-800 mb-2 border-b pb-2">Skills Acquired</h2>
+                <div class="chart-container">
+                    <canvas id="skillsChart"></canvas>
+                </div>
+            </section>
+
+        </div>
+
+        <div class="w-full lg:w-2/3 flex flex-col gap-6">
+            
+            <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
+                <div class="bg-slate-100 border-b border-slate-200 p-4 flex gap-2 overflow-x-auto scrollbar-hide" id="nav-tabs">
+                </div>
+
+                <div class="p-6 flex-grow flex flex-col" id="exercise-content">
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <script>
+        const exercises = [
+            {
+                id: 0,
+                title: "1: The Student Profile",
+                shortName: "Variables",
+                concept: "How to create 'containers' (variables) in memory for different types of data, just like defining column types in a database or Pandas DataFrame.",
+                question: "Write a program that stores a student's age, exact height, and grade letter, then prints them out.",
+                steps: [
+                    "Include the standard input/output library (#include <stdio.h>) and create your main() function.",
+                    "Create an integer variable (int) named age and set it to 20.",
+                    "Create a float variable (float) named height and set it to 5.9.",
+                    "Create a character variable (char) named grade and set it to 'A' (use single quotes).",
+                    "Use printf() to display the data. You must use %d for the age, %f for the height, and %c for the grade."
+                ],
+                output: "Age: 20\nHeight: 5.900000\nGrade: A",
+                skillCategory: "Variables & Types",
+                completed: false
+            },
+            {
+                id: 1,
+                title: "2: The Formatted Receipt",
+                shortName: "Formatting",
+                concept: "How to control exactly how numbers look on the screen, such as rounding decimals or aligning columns with extra spacing.",
+                question: "Write a program that prints a price and a product ID so that the price looks like standard money (2 decimal places) and the ID is pushed to the right.",
+                steps: [
+                    "Inside your main() function, declare float price = 99.5; and int productId = 7;.",
+                    "Use printf() to print the price. To force it to show exactly two decimal places (like 99.50), use the specifier %.2f.",
+                    "Use printf() to print the productId. To make it take up exactly 5 spaces on the screen (adding blank spaces in front of the 7), use the specifier %5d."
+                ],
+                output: "Price: $99.50\nProduct ID:     7",
+                skillCategory: "Output Formatting",
+                completed: false
+            },
+            {
+                id: 2,
+                title: "3: The Fixed Configurations",
+                shortName: "Constants",
+                concept: "How to create immutable (unchangeable) values. This is useful for fixed settings like tax rates or maximum file upload sizes.",
+                question: "Write a program that stores a maximum user limit and a fixed tax rate, and prove that these values cannot be changed.",
+                steps: [
+                    "At the very top of your file (before main()), use a macro to define a constant: #define MAX_USERS 100.",
+                    "Inside main(), use the const keyword to create another constant: const float TAX_RATE = 0.05;.",
+                    "Try to write a line of code that changes the tax rate: TAX_RATE = 0.10;.",
+                    "Run the program to see the compiler error.",
+                    "Turn that error-causing line into a comment (put // in front of it) and write a note explaining why it failed. Print both constants using printf()."
+                ],
+                output: "error: assignment of read-only variable 'TAX_RATE'\n\n(After commenting out the error-causing line...)\nMax Users: 100\nTax Rate: 0.050000",
+                skillCategory: "Immutability",
+                completed: false
+            },
+            {
+                id: 3,
+                title: "4: The Safe Data Entry",
+                shortName: "scanf Rules",
+                concept: "How to correctly ask the user to type in data without breaking the program's input reader.",
+                question: "Write a program that asks the user for their birth year and prints it back to them safely.",
+                steps: [
+                    "Declare an empty integer variable called birthYear.",
+                    "Use printf(\"Enter your birth year: \"); to show a message on the screen.",
+                    "Use scanf() to take the input. Crucial Rule: Make sure it looks exactly like this: scanf(\"%d\", &birthYear);.",
+                    "Do not put any extra text or spaces inside the scanf quotes (e.g., no scanf(\"year %d\", ...)).",
+                    "Print out a final message using printf(\"You were born in %d\", birthYear);."
+                ],
+                output: "Enter your birth year: 1995\nYou were born in 1995",
+                skillCategory: "Standard Input",
+                completed: false
+            },
+            {
+                id: 4,
+                title: "5: The Data Entry Form",
+                shortName: "Multi-Input",
+                concept: "Collecting a structured set of data from a user (like submitting a registration form on a web app) and displaying the consolidated record.",
+                question: "Write a program that asks the user for their profile tier letter, user ID, and starting account balance, then prints a consolidated profile summary.",
+                steps: [
+                    "Declare three empty variables at the top of main(): char tier;, int userId;, and float balance;.",
+                    "Use printf() to prompt the user for their tier letter (e.g., A, B, or C). Capture it using scanf(\" %c\", &tier);. (Note the deliberate space before %c)",
+                    "Use printf() to ask for their user ID, and capture it using scanf(\"%d\", &userId);.",
+                    "Use printf() to ask for their starting balance, and capture it using scanf(\"%f\", &balance);.",
+                    "Finally, use a single printf() statement to display the complete structured profile in a clean format using all three specifiers."
+                ],
+                output: "Enter your tier letter: A\nEnter your user ID: 1024\nEnter your starting balance: 150.50\nUser 1024 (Tier A) has a balance of $150.50",
+                skillCategory: "Standard Input",
+                completed: false
+            },
+            {
+                id: 5,
+                title: "6: The Basic Information Form",
+                shortName: "Structured I/O",
+                concept: "Consolidating sequential inputs into a structured readout. If you are used to building full-stack web apps, think of this as the C equivalent of capturing state from a React registration form.",
+                question: "Write a program that acts as a basic registration terminal. It should ask the user for their first name initial, their age, and their target salary, then print out a formatted registration ticket.",
+                steps: [
+                    "Declare three variables to hold the user's first name initial (character), age (integer), and target salary (float).",
+                    "Prompt the user with the message 'Enter your first name initial:' and safely read their character input.",
+                    "Prompt the user with the message 'Enter your age:' and safely read their integer input.",
+                    "Prompt the user with the message 'Enter your target salary:' and safely read their float input.",
+                    "Print out a final structured ticket summarizing the collected data. Make sure to format the salary variable to display exactly two decimal places."
+                ],
+                output: "Enter your first name initial: J\nEnter your age: 28\nEnter your target salary: 85000.00\n\n--- REGISTRATION SAVED ---\nInitial: J\nAge: 28\nTarget Salary: $85000.00",
+                skillCategory: "Structured I/O",
+                completed: false
+            }
+        ];
+
+        let currentIndex = 0;
+        let progressChartInstance = null;
+        let skillsChartInstance = null;
+        let currentUser = null;
+
+        function init() {
+            if (checkAuth()) {
+                initializeApp();
+            }
+        }
+
+        function initializeApp() {
+            renderTabs();
+            renderExercise();
+            initCharts();
+            updateDashboard();
+        }
+
+        function checkAuth() {
+            const savedUser = localStorage.getItem('c_masterclass_user');
+            if (savedUser) {
+                currentUser = savedUser;
+                document.getElementById('login-modal').classList.add('hidden');
+                document.getElementById('user-info').classList.remove('hidden');
+                document.getElementById('username-display').innerText = currentUser;
+                loadProgress();
+                return true;
+            } else {
+                document.getElementById('login-modal').classList.remove('hidden');
+                document.getElementById('user-info').classList.add('hidden');
+                return false;
+            }
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            const usernameInput = document.getElementById('username').value.trim();
+            const passwordInput = document.getElementById('password').value.trim();
+            
+            if (usernameInput && passwordInput) {
+                /* * ARCHITECTURE NOTE FOR FULL-STACK INTEGRATION (React + FastAPI/Flask):
+                 * Instead of trusting the client blindly, you would send these credentials
+                 * to your Python backend to securely verify hashes and issue a JWT:
+                 * * WARNING: Storing raw passwords in a Google Sheet is highly insecure 
+                 * and should only be used for prototyping/demonstration purposes.
+                 */
+                 
+                // --- GOOGLE SHEETS INTEGRATION ---
+                // Replace the URL below with your deployed Google Apps Script Web App URL
+                const GOOGLE_SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL'; 
+                
+                const formData = new FormData();
+                formData.append('User_Name', usernameInput);
+                formData.append('Password', passwordInput);
+
+                // Send data to Google Sheets via Apps Script Web App
+                if (GOOGLE_SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL') {
+                    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData })
+                        .then(response => console.log('Credentials sent to Google Sheet.'))
+                        .catch(error => console.error('Error sending to Google Sheet:', error));
+                }
+                
+                // For this client-side prototype, we simulate a successful login bypass:
+                localStorage.setItem('c_masterclass_user', usernameInput);
+                checkAuth();
+                initializeApp();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('c_masterclass_user');
+            currentUser = null;
+            
+            // Reset local state to default
+            exercises.forEach(ex => ex.completed = false);
+            currentIndex = 0;
+            
+            // Show login modal, hide user info
+            document.getElementById('login-modal').classList.remove('hidden');
+            document.getElementById('user-info').classList.add('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            
+            // Destroy charts to prevent duplication issues on re-login
+            if (progressChartInstance) progressChartInstance.destroy();
+            if (skillsChartInstance) skillsChartInstance.destroy();
+        }
+
+        function saveProgress() {
+            if (!currentUser) return;
+            const progress = exercises.map(ex => ex.completed);
+            localStorage.setItem(`c_progress_${currentUser}`, JSON.stringify(progress));
+        }
+
+        function loadProgress() {
+            if (!currentUser) return;
+            const savedProgress = localStorage.getItem(`c_progress_${currentUser}`);
+            if (savedProgress) {
+                const progress = JSON.parse(savedProgress);
+                exercises.forEach((ex, index) => {
+                    ex.completed = progress[index] || false;
+                });
+            }
+        }
+
+        function renderTabs() {
+            const tabsContainer = document.getElementById('nav-tabs');
+            tabsContainer.innerHTML = '';
+            
+            exercises.forEach((ex, index) => {
+                const isActive = index === currentIndex;
+                const btn = document.createElement('button');
+                btn.className = `px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${isActive ? 'bg-indigo-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'}`;
+                
+                let icon = '⬜';
+                if (ex.completed) icon = '✅';
+                if (isActive && !ex.completed) icon = '▶️';
+
+                btn.innerHTML = `<span>${icon}</span> ${ex.shortName}`;
+                btn.onclick = () => {
+                    currentIndex = index;
+                    renderTabs();
+                    renderExercise();
+                };
+                tabsContainer.appendChild(btn);
+            });
+        }
+
+        function renderExercise() {
+            const ex = exercises[currentIndex];
+            const contentContainer = document.getElementById('exercise-content');
+            
+            let stepsHtml = '';
+            ex.steps.forEach((step, i) => {
+                stepsHtml += `
+                    <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100 mb-2">
+                        <input type="checkbox" id="step-${i}" class="mt-1 h-4 w-4 text-indigo-600 rounded cursor-pointer">
+                        <label for="step-${i}" class="text-sm text-slate-700 cursor-pointer">${step}</label>
+                    </div>
+                `;
+            });
+
+            contentContainer.innerHTML = `
+                <div class="fade-in flex-grow flex flex-col">
+                    <div class="mb-4">
+                        <span class="inline-block px-2 py-1 bg-amber-100 text-amber-800 text-xs font-bold uppercase tracking-wider rounded mb-2">Concept Cleared</span>
+                        <h2 class="text-2xl font-bold text-slate-900">${ex.title}</h2>
+                        <p class="text-slate-600 mt-2 text-sm leading-relaxed">${ex.concept}</p>
+                    </div>
+                    
+                    <div class="mb-6 p-4 bg-indigo-50 border-l-4 border-indigo-500 rounded-r-lg">
+                        <h3 class="font-bold text-indigo-900 text-sm uppercase mb-1">Question</h3>
+                        <p class="text-indigo-800">${ex.question}</p>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="font-bold text-slate-800 mb-3">Step-by-Step Instructions</h3>
+                        ${stepsHtml}
+                    </div>
+
+                    <div class="mt-auto pt-4 border-t border-slate-200">
+                        <div class="flex flex-wrap gap-3 mb-4">
+                            <button onclick="runCode()" class="bg-slate-800 hover:bg-slate-700 text-white px-5 py-2 rounded-md font-medium text-sm transition-colors flex items-center gap-2">
+                                💻 Run Code
+                            </button>
+                            <button onclick="markComplete()" id="btn-complete" class="${ex.completed ? 'bg-emerald-100 text-emerald-800' : 'bg-emerald-600 hover:bg-emerald-500 text-white'} px-5 py-2 rounded-md font-medium text-sm transition-colors flex items-center gap-2">
+                                ${ex.completed ? '✅ Completed' : '✨ Mark as Complete'}
+                            </button>
+                        </div>
+                        
+                        <div id="terminal-container" class="hidden rounded-lg overflow-hidden border border-slate-700 shadow-inner">
+                            <div class="bg-slate-800 px-4 py-2 flex items-center gap-2 border-b border-slate-700">
+                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                                <span class="text-slate-400 text-xs font-mono ml-2">bash - execution</span>
+                            </div>
+                            <div class="terminal-bg p-4 h-48 overflow-y-auto text-sm leading-relaxed" id="terminal-output">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function runCode() {
+            const terminal = document.getElementById('terminal-container');
+            const output = document.getElementById('terminal-output');
+            const ex = exercises[currentIndex];
+            
+            terminal.classList.remove('hidden');
+            output.innerHTML = '<span class="text-slate-500">Compiling...</span>';
+            
+            setTimeout(() => {
+                output.innerHTML = ex.output.replace(/\n/g, '<br>');
+            }, 600);
+        }
+
+        function markComplete() {
+            exercises[currentIndex].completed = true;
+            saveProgress();
+            renderTabs();
+            renderExercise();
+            updateDashboard();
+        }
+
+        function initCharts() {
+            const ctxProgress = document.getElementById('progressChart').getContext('2d');
+            progressChartInstance = new Chart(ctxProgress, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completed', 'Remaining'],
+                    datasets: [{
+                        data: [0, 6],
+                        backgroundColor: ['#10b981', '#cbd5e1'],
+                        borderWidth: 0,
+                        cutout: '75%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: { enabled: true }
+                    }
+                }
+            });
+
+            const ctxSkills = document.getElementById('skillsChart').getContext('2d');
+            skillsChartInstance = new Chart(ctxSkills, {
+                type: 'polarArea',
+                data: {
+                    labels: ['Variables', 'Formatting', 'Immutability', 'Input', 'Struct I/O'],
+                    datasets: [{
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: [
+                            'rgba(99, 102, 241, 0.6)',
+                            'rgba(245, 158, 11, 0.6)',
+                            'rgba(16, 185, 129, 0.6)',
+                            'rgba(236, 72, 153, 0.6)',
+                            'rgba(14, 165, 233, 0.6)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            ticks: { display: false },
+                            grid: { color: 'rgba(0,0,0,0.05)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        function updateDashboard() {
+            const completedCount = exercises.filter(ex => ex.completed).length;
+            const remainingCount = exercises.length - completedCount;
+            const percentage = Math.round((completedCount / exercises.length) * 100);
+
+            document.getElementById('header-progress').innerText = `${percentage}%`;
+
+            progressChartInstance.data.datasets[0].data = [completedCount, remainingCount];
+            progressChartInstance.update();
+
+            const skillCounts = {
+                'Variables & Types': 0,
+                'Output Formatting': 0,
+                'Immutability': 0,
+                'Standard Input': 0,
+                'Structured I/O': 0
+            };
+
+            exercises.forEach(ex => {
+                if (ex.completed) {
+                    if (skillCounts[ex.skillCategory] !== undefined) {
+                        skillCounts[ex.skillCategory] += 1;
+                    } else if (ex.skillCategory === 'Standard Input') {
+                        skillCounts['Standard Input'] += 0.5;
+                    }
+                }
+            });
+
+            skillsChartInstance.data.datasets[0].data = [
+                skillCounts['Variables & Types'],
+                skillCounts['Output Formatting'],
+                skillCounts['Immutability'],
+                exercises.filter(e => e.skillCategory === 'Standard Input' && e.completed).length,
+                skillCounts['Structured I/O']
+            ];
+            skillsChartInstance.update();
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

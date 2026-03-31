@@ -5,7 +5,7 @@ import {
   ChevronRight, RefreshCw, GraduationCap, Layout, Info, Tag, Hash, Quote, List,
   AlertTriangle, Server, ArrowDown, ArrowUp, Calculator, Scale, ToggleLeft, 
   ArrowRightLeft, ChevronsUp, HelpCircle, Star, Zap, Activity, Network, Circle, Square, Hexagon,
-  Plus, Trash2, ChevronUp, ChevronDown, PlayCircle, StopCircle
+  Plus, Trash2, ChevronUp, ChevronDown, PlayCircle, StopCircle, Award, ExternalLink
 } from 'lucide-react';
 
 // --- CUSTOM ICONS ---
@@ -1409,6 +1409,20 @@ export default function App() {
               </button>
             );
           })}
+        </div>
+
+        {/* NEW EXAM SECTION */}
+        <div className="p-4 border-t border-slate-200 bg-white">
+          <button
+            onClick={() => window.open('https://raw.githack.com/RudraX-Github/C_Language/main/Data/HTML%20pages/Exam.html', '_blank')}
+            className="w-full flex items-center justify-between gap-2 px-4 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl text-sm font-bold transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+          >
+            <div className="flex items-center gap-2">
+              <Award className="w-5 h-5" />
+              <span>Final Exam Portal</span>
+            </div>
+            <ExternalLink className="w-4 h-4 opacity-70" />
+          </button>
         </div>
       </aside>
 
